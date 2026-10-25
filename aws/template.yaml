@@ -1,0 +1,224 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SeeLearn Serverless Architecture for OpenCV + AWS Hackathon.
+  Amazon Bedrock (Claude) Grounded Engineering Tutor, API Gateway, Lambda, DynamoDB, S3 & CloudFront.
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 512
+    Runtime: python3.11
+    Environment:
+      Variables:
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        BEDROCK_REGION: !Ref BedrockRegion
+        DYNAMODB_TABLE: !Ref SessionsTable
+        POWERTOOLS_SERVICE_NAME: SeeLearnBackend
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: 'anthropic.claude-3-haiku-20240307-v1:0'
+    Description: Amazon Bedrock Foundation Model ID for grounded technical tutoring.
+  BedrockRegion:
+    Type: String
+    Default: 'us-east-1'
+    Description: AWS Region where Amazon Bedrock is provisioned.
+
+Resources:
+  # ============================================================================
+  # 1. API GATEWAY WITH CORS
+  # ============================================================================
+  SeeLearnApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'OPTIONS,POST,GET'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+        AllowOrigin: "'*'"
+
+  # ============================================================================
+  # 2. LAMBDA FUNCTIONS (INTERPRET & EXPLAIN)
+  # ============================================================================
+  InterpretGoalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: interpret.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: !Sub 'arn:aws:bedrock:${BedrockRegion}::foundation-model/${BedrockModelId}'
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt SessionsTable.Arn
+      Events:
+        InterpretPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SeeLearnApi
+            Path: /interpret
+            Method: POST
+
+  ExplainComponentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/
+      Handler: explain.lambda_handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: !Sub 'arn:aws:bedrock:${BedrockRegion}::foundation-model/${BedrockModelId}'
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt SessionsTable.Arn
+      Events:
+        ExplainPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SeeLearnApi
+            Path: /explain
+            Method: POST
+
+  # ============================================================================
+  # 3. DYNAMODB FOR SESSION & GESTURE QUALITY SUMMARY (NO RAW VIDEO)
+  # ============================================================================
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SeeLearnSessions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: sessionId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: sessionId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  # ============================================================================
+  # 4. S3 & CLOUDFRONT FOR SECURE STATIC HOSTING
+  # ============================================================================
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'seelearn-frontend-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for SeeLearn static frontend'
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:GetObject'
+            Effect: Allow
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: ['GET', 'HEAD', 'OPTIONS']
+          CachedMethods: ['GET', 'HEAD']
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+
+  # ============================================================================
+  # 5. CLOUDWATCH METRICS & LATENCY DASHBOARD
+  # ============================================================================
+  SeeLearnCloudWatchDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: SeeLearnLatencyAndErrorDashboard
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Duration", "FunctionName", "${InterpretGoalFunction}", { "stat": "p95", "label": "Interpret P95 Duration" } ],
+                  [ "...", "${ExplainComponentFunction}", { "stat": "p95", "label": "Explain P95 Duration" } ]
+                ],
+                "period": 60,
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Lambda Execution Latencies (P95)"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApiGateway", "5XXError", "ApiName", "${SeeLearnApi}", { "stat": "Sum", "label": "5XX Server Errors" } ],
+                  [ ".", "4XXError", ".", ".", { "stat": "Sum", "label": "4XX Client Errors" } ]
+                ],
+                "period": 60,
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "API Gateway Request Error Rates"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  ApiEndpoint:
+    Description: Base URL for SeeLearn API Gateway REST endpoints
+    Value: !Sub 'https://${SeeLearnApi}.execute-api.${AWS::Region}.amazonaws.com/prod/'
+  CloudFrontUrl:
+    Description: HTTPS URL for the CloudFront CDN frontend
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+  SessionsTableName:
+    Description: DynamoDB Table name for session summaries
+    Value: !Ref SessionsTable

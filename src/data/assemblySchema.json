@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SeeLearnAssemblyTemplate",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "category",
+    "components",
+    "connections",
+    "assembly_steps",
+    "mechanisms",
+    "experiments",
+    "notes"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "category": { "type": "string" },
+    "tagline": { "type": "string" },
+    "cameraDefaultPosition": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "cameraTarget": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "subsystem",
+          "mesh",
+          "position",
+          "explodedOffset",
+          "short_description",
+          "detailed_description",
+          "inputs",
+          "outputs",
+          "why_needed"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "subsystem": { "type": "string" },
+          "position": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "explodedOffset": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "short_description": { "type": "string" },
+          "detailed_description": { "type": "string" },
+          "inputs": { "type": "array", "items": { "type": "string" } },
+          "outputs": { "type": "array", "items": { "type": "string" } },
+          "why_needed": { "type": "string" }
+        }
+      }
+    },
+    "connections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "from", "to", "type", "label", "description"],
+        "properties": {
+          "id": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "type": { "enum": ["power", "signal", "mechanical"] },
+          "label": { "type": "string" },
+          "description": { "type": "string" },
+          "specs": { "type": "string" }
+        }
+      }
+    },
+    "assembly_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "title", "description", "componentIds", "toolsRequired"],
+        "properties": {
+          "step": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "componentIds": { "type": "array", "items": { "type": "string" } },
+          "toolsRequired": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "mechanisms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "summary", "componentsInvolved", "physicsPrinciple", "howItWorks"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "summary": { "type": "string" },
+          "componentsInvolved": { "type": "array", "items": { "type": "string" } },
+          "physicsPrinciple": { "type": "string" },
+          "howItWorks": { "type": "string" }
+        }
+      }
+    },
+    "experiments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "hypothesisPrompt",
+          "componentId",
+          "modificationType",
+          "predictionOptions",
+          "correctPredictionIndex",
+          "observationSummary",
+          "engineeringExplanation",
+          "recoveryAction"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "hypothesisPrompt": { "type": "string" },
+          "componentId": { "type": "string" },
+          "modificationType": { "enum": ["disable", "reverse", "disconnect", "overheat"] },
+          "predictionOptions": { "type": "array", "items": { "type": "string" } },
+          "correctPredictionIndex": { "type": "integer" },
+          "observationSummary": { "type": "string" },
+          "engineeringExplanation": { "type": "string" },
+          "recoveryAction": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "object",
+      "required": ["fidelity", "isConceptualDemonstrator", "simplifications", "safetyDisclaimer"],
+      "properties": {
+        "fidelity": { "enum": ["engineering-accurate", "data-only-stub"] },
+        "isConceptualDemonstrator": { "type": "boolean" },
+        "simplifications": { "type": "array", "items": { "type": "string" } },
+        "safetyDisclaimer": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "topic": "racing drone",
+  "title": "5-Inch FPV Racing Drone",
+  "overview": "High-thrust 6S brushless aerobatic racing quadcopter engineered for extreme power-to-weight ratio, low rotational inertia, and low-latency analog/digital video transmission.",
+  "scaleNote": "Approx. 1:1 scale (225mm diagonal motor wheelbase)",
+  "layoutStyle": "assembly",
+  "learningObjectives": [
+    "Understand the 4-in-1 ESC and Flight Controller electronic stack topology",
+    "Trace high-current 6S DC power paths and digital DShot600 motor control signals",
+    "Analyze counter-rotating brushless motor aerodynamics and differential thrust yaw authority",
+    "Examine structural carbon fiber unibody load distribution during high-G maneuvers"
+  ],
+  "components": [
+    {
+      "id": "carbon_frame",
+      "name": "Carbon Fiber Unibody Frame",
+      "group": "Structure",
+      "parts": [
+        { "shape": "box", "size": [0.9, 0.04, 1.4], "position": [0, -0.05, 0], "material": "carbon_fiber" },
+        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [0.8, 0, 0.8], "rotation": [0, -0.785, 0], "material": "carbon_fiber" },
+        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [-0.8, 0, 0.8], "rotation": [0, 0.785, 0], "material": "carbon_fiber" },
+        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [-0.8, 0, -0.8], "rotation": [0, -0.785, 0], "material": "carbon_fiber" },
+        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [0.8, 0, -0.8], "rotation": [0, 0.785, 0], "material": "carbon_fiber" },
+        { "shape": "box", "size": [0.75, 0.04, 1.3], "position": [0, 0.5, 0], "material": "carbon_fiber" }
+      ],
+      "summary": "T700 3K weave carbon fiber chassis engineered for torsional rigidity and motor harmonic resonance damping.",
+      "howItWorks": "Interlocks 4mm arms with 2mm top and bottom sandwich plates, transferring aerodynamic thrust loads directly to the central battery and electronics mass.",
+      "whyNeeded": "Provides a rigid physical foundation. Frame flex introduces gyro aliasing and PID loop instability.",
+      "keyFacts": [
+        "Toray T700 3K matte carbon fiber weave",
+        "225mm diagonal motor-to-motor wheelbase",
+        "Resists shock impacts up to 25G"
+      ],
+      "confidence": "high",
+      "explode": [0, -0.8, 0]
+    },
+    {
+      "id": "esc_4in1",
+      "name": "4-in-1 Electronic Speed Controller",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "box", "size": [0.72, 0.04, 0.72], "position": [0, 0.08, 0], "material": "pcb_black" },
+        { "shape": "box", "size": [0.65, 0.03, 0.65], "position": [0, 0.11, 0], "material": "aluminum_heatsink" },
+        { "shape": "box", "size": [0.12, 0.08, 0.08], "position": [-0.3, 0.1, -0.3], "material": "copper" }
+      ],
+      "summary": "High-current power distribution board integrating 4 independent three-phase MOSFET inverter bridges.",
+      "howItWorks": "Receives 22.2V-25.2V direct current from the LiPo battery and pulses high-frequency 3-phase AC to each motor using DShot600 digital protocol.",
+      "whyNeeded": "Translates low-voltage digital motor speed commands into up to 55A per motor of switched electrical power.",
+      "keyFacts": [
+        "Continuous 55A per channel (burst 65A)",
+        "32-bit ARM Cortex-M4 gate drivers",
+        "Bidirectional DShot telemetry feedback"
+      ],
+      "confidence": "high",
+      "explode": [0, -0.3, 0]
+    },
+    {
+      "id": "flight_controller",
+      "name": "Flight Controller (FC)",
+      "group": "Logic & Sensors",
+      "parts": [
+        { "shape": "box", "size": [0.72, 0.04, 0.72], "position": [0, 0.26, 0], "material": "pcb_black" },
+        { "shape": "box", "size": [0.22, 0.03, 0.22], "position": [0, 0.29, 0], "material": "silicon_die" },
+        { "shape": "box", "size": [0.08, 0.02, 0.08], "position": [0.15, 0.28, 0.12], "material": "ceramic" },
+        { "shape": "cylinder", "size": [0.02, 0.04], "position": [-0.25, 0.28, -0.25], "material": "led_emissive" }
+      ],
+      "summary": "Central nervous system running real-time Betaflight PID estimation and sensor filtering algorithms at 8 kHz.",
+      "howItWorks": "Samples an onboard 6-axis MEMS IMU gyro at 8,000 times per second, compares with pilot RC stick inputs, and recalculates motor outputs.",
+      "whyNeeded": "Quadcopter flight is inherently aerodynamically unstable without closed-loop PID rate stabilization.",
+      "keyFacts": [
+        "STM32F405 / F722 microcontroller @ 216 MHz",
+        "BMI270 low-noise vibration-isolated IMU",
+        "Onboard OSD (On-Screen Display) video generator"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.1, 0]
+    },
+    {
+      "id": "motor_fr",
+      "name": "Motor Front-Right (2207 1950KV)",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "cylinder", "size": [0.28, 0.22], "position": [1.35, 0.14, 1.35], "material": "polished_metal" },
+        { "shape": "cylinder", "size": [0.05, 0.35], "position": [1.35, 0.28, 1.35], "material": "brushed_metal" },
+        { "shape": "cylinder", "size": [0.24, 0.12], "position": [1.35, 0.12, 1.35], "material": "copper" }
+      ],
+      "summary": "Brushless outrunner motor delivering over 1.8 kg of static thrust at maximum 6S battery voltage.",
+      "howItWorks": "Permanent neodymium N52SH magnets mounted inside the outer bell rotate around stationary copper stator coils switched by the ESC.",
+      "whyNeeded": "Converts electrical power into high-torque rotational mechanical energy at up to 35,000 RPM.",
+      "keyFacts": [
+        "22mm stator diameter x 7mm stator height",
+        "1950 KV rating (RPM per volt)",
+        "Counter-Clockwise (CCW) standard rotation"
+      ],
+      "confidence": "high",
+      "explode": [0.8, 0.4, 0.8]
+    },
+    {
+      "id": "motor_fl",
+      "name": "Motor Front-Left (2207 1950KV)",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "cylinder", "size": [0.28, 0.22], "position": [-1.35, 0.14, 1.35], "material": "polished_metal" },
+        { "shape": "cylinder", "size": [0.05, 0.35], "position": [-1.35, 0.28, 1.35], "material": "brushed_metal" },
+        { "shape": "cylinder", "size": [0.24, 0.12], "position": [-1.35, 0.12, 1.35], "material": "copper" }
+      ],
+      "summary": "Front-left brushless outrunner motor rotating Clockwise (CW) to balance angular momentum.",
+      "howItWorks": "Generates upward vertical thrust; differential torque relative to adjacent motors creates roll and pitch control moments.",
+      "whyNeeded": "Provides 25% of total quadcopter lift and contributes to 3-axis attitude control authority.",
+      "keyFacts": [
+        "Clockwise (CW) rotation",
+        "N52SH curved arc magnets",
+        "M5 titanium hollow output shaft"
+      ],
+      "confidence": "high",
+      "explode": [-0.8, 0.4, 0.8]
+    },
+    {
+      "id": "motor_rl",
+      "name": "Motor Rear-Left (2207 1950KV)",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "cylinder", "size": [0.28, 0.22], "position": [-1.35, 0.14, -1.35], "material": "polished_metal" },
+        { "shape": "cylinder", "size": [0.05, 0.35], "position": [-1.35, 0.28, -1.35], "material": "brushed_metal" },
+        { "shape": "cylinder", "size": [0.24, 0.12], "position": [-1.35, 0.12, -1.35], "material": "copper" }
+      ],
+      "summary": "Rear-left brushless outrunner motor rotating Counter-Clockwise (CCW).",
+      "howItWorks": "Produces thrust and aerodynamic torque in coordination with diagonal Front-Right motor.",
+      "whyNeeded": "Pairs with front-right motor to provide yaw rotational torque without net angular pitch imbalance.",
+      "keyFacts": [
+        "Counter-Clockwise (CCW) rotation",
+        "Kawasaki silicon steel stator laminations",
+        "High-temperature 220°C copper wire"
+      ],
+      "confidence": "high",
+      "explode": [-0.8, 0.4, -0.8]
+    },
+    {
+      "id": "motor_rr",
+      "name": "Motor Rear-Right (2207 1950KV)",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "cylinder", "size": [0.28, 0.22], "position": [1.35, 0.14, -1.35], "material": "polished_metal" },
+        { "shape": "cylinder", "size": [0.05, 0.35], "position": [1.35, 0.28, -1.35], "material": "brushed_metal" },
+        { "shape": "cylinder", "size": [0.24, 0.12], "position": [1.35, 0.12, -1.35], "material": "copper" }
+      ],
+      "summary": "Rear-right brushless outrunner motor rotating Clockwise (CW).",
+      "howItWorks": "Pairs with front-left motor to control clockwise yaw and rear pitch elevation.",
+      "whyNeeded": "Completes the 4-rotor quadcopter actuation matrix.",
+      "keyFacts": [
+        "Clockwise (CW) rotation",
+        "EZO Japanese high-RPM ball bearings",
+        "0.15mm air gap between rotor and stator"
+      ],
+      "confidence": "high",
+      "explode": [0.8, 0.4, -0.8]
+    },
+    {
+      "id": "propellers",
+      "name": "5.1-Inch Tri-Blade Propeller Set",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "cylinder", "size": [0.85, 0.03], "position": [1.35, 0.38, 1.35], "material": "translucent_blue" },
+        { "shape": "cylinder", "size": [0.85, 0.03], "position": [-1.35, 0.38, 1.35], "material": "translucent_blue" },
+        { "shape": "cylinder", "size": [0.85, 0.03], "position": [-1.35, 0.38, -1.35], "material": "translucent_blue" },
+        { "shape": "cylinder", "size": [0.85, 0.03], "position": [1.35, 0.38, -1.35], "material": "translucent_blue" }
+      ],
+      "summary": "Polycarbonate aerodynamic airfoil blades producing lift and thrust through high-speed air acceleration.",
+      "howItWorks": "Accelerates incoming air column downward via cambered aerodynamic airfoil sections with aggressive pitch distribution.",
+      "whyNeeded": "Transforms motor rotational kinetic energy into fluid aerodynamic thrust force.",
+      "keyFacts": [
+        "5.1 inch diameter x 4.3 inch pitch (5143)",
+        "Durable impact-resistant polycarbonate material",
+        "Total static thrust ratio: > 12:1 thrust-to-weight"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.6, 0]
+    },
+    {
+      "id": "fpv_camera",
+      "name": "Micro FPV Camera",
+      "group": "Vision & Avionics",
+      "parts": [
+        { "shape": "box", "size": [0.38, 0.38, 0.34], "position": [0, 0.32, 0.95], "material": "black_plastic" },
+        { "shape": "cylinder", "size": [0.12, 0.16], "position": [0, 0.32, 1.15], "rotation": [1.57, 0, 0], "material": "glass" },
+        { "shape": "box", "size": [0.42, 0.04, 0.04], "position": [0, 0.22, 0.95], "material": "aluminum_heatsink" }
+      ],
+      "summary": "Low-latency CMOS camera mounted at a 35° uptilt angle to stream pilot point-of-view imagery.",
+      "howItWorks": "Captures raw optical photons onto a 1/1.8-inch Starlight CMOS sensor, outputting low-latency analog NTSC/PAL composite video signal.",
+      "whyNeeded": "Gives the pilot first-person visual reference inside video goggles with less than 6ms sensor latency.",
+      "keyFacts": [
+        "1200 TVL horizontal resolution",
+        "165° ultra-wide field of view (FOV)",
+        "Global WDR (Wide Dynamic Range) day/night sensor"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.2, 0.6]
+    },
+    {
+      "id": "vtx_unit",
+      "name": "5.8GHz Video Transmitter (VTX)",
+      "group": "Vision & Avionics",
+      "parts": [
+        { "shape": "box", "size": [0.6, 0.12, 0.6], "position": [0, 0.42, -0.3], "material": "aluminum_heatsink" },
+        { "shape": "cylinder", "size": [0.03, 0.45], "position": [0, 0.7, -0.6], "rotation": [-0.5, 0, 0], "material": "rubber" },
+        { "shape": "sphere", "size": [0.08], "position": [0, 0.9, -0.72], "material": "black_plastic" }
+      ],
+      "summary": "Microwave RF transmitter broadcasting live analog FPV video down to pilot goggles at 5.8 GHz.",
+      "howItWorks": "Modulates composite video signal onto 5.8 GHz FM carrier frequency with selectable RF transmission power (25mW to 800mW).",
+      "whyNeeded": "Transmits video over long distances and through obstacles without digital compression latency.",
+      "keyFacts": [
+        "Output power: 25mW / 200mW / 800mW switchable",
+        "Circular polarized omnidirectional cloverleaf antenna",
+        "SmartAudio protocol for channel changes via OSD"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.4, -0.4]
+    },
+    {
+      "id": "lipo_battery",
+      "name": "6S LiPo Battery (1300mAh 120C)",
+      "group": "Power & Propulsion",
+      "parts": [
+        { "shape": "box", "size": [0.75, 0.55, 1.4], "position": [0, 0.85, 0], "material": "white_plastic" },
+        { "shape": "cylinder", "size": [0.04, 0.2], "position": [0.15, 0.85, -0.75], "rotation": [1.57, 0, 0], "material": "gold" },
+        { "shape": "cylinder", "size": [0.04, 0.2], "position": [-0.15, 0.85, -0.75], "rotation": [1.57, 0, 0], "material": "rubber" }
+      ],
+      "summary": "High-discharge Lithium Polymer power reservoir mounted on the top carbon plate with rubberized strap.",
+      "howItWorks": "Houses 6 series-connected lithium cobalt oxide electrochemical pouch cells providing nominal 22.2V (25.2V fully charged).",
+      "whyNeeded": "Delivers the massive instantaneous current (>150A burst) required for high-speed punch-outs.",
+      "keyFacts": [
+        "22.2V nominal voltage (6S1P)",
+        "1300mAh capacity (approx. 3.5 minutes flight time)",
+        "120C continuous discharge rating (156A continuous)"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.8, 0]
+    },
+    {
+      "id": "elrs_receiver",
+      "name": "ExpressLRS 2.4GHz RC Receiver",
+      "group": "Logic & Sensors",
+      "parts": [
+        { "shape": "box", "size": [0.24, 0.04, 0.28], "position": [0, 0.38, 0.3], "material": "pcb_black" },
+        { "shape": "tube", "size": [0.015], "position": [0, 0.4, 0.3], "material": "rubber", "path": [[0, 0.4, 0.3], [0.3, 0.5, 0.3], [0.6, 0.55, 0.3]] }
+      ],
+      "summary": "Ultra-low-latency open-source radio control link operating at up to 500 Hz packet rate.",
+      "howItWorks": "Receives LoRa frequency-hopping RF packets from pilot handheld radio, parsing channel stick positions and sending CRSF UART packets to FC.",
+      "whyNeeded": "Provides deterministic <3ms control response with miles of line-of-sight range.",
+      "keyFacts": [
+        "SX1280 LoRa RF chipset",
+        "Up to 500 Hz telemetry refresh rate",
+        "True diversity antenna switching"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.3, 0.3]
+    }
+  ],
+  "connections": [
+    {
+      "from": "lipo_battery",
+      "to": "esc_4in1",
+      "type": "power",
+      "label": "22.2V Main DC (XT60)",
+      "description": "High-current 12AWG silicone wiring passing 22.2V direct current from the battery to the ESC power pads."
+    },
+    {
+      "from": "esc_4in1",
+      "to": "flight_controller",
+      "type": "power",
+      "label": "5V 2A BEC Power Rail",
+      "description": "Regulated low-noise 5V power stepped down to power microcontroller, IMU, and sensors."
+    },
+    {
+      "from": "flight_controller",
+      "to": "esc_4in1",
+      "type": "signal",
+      "label": "4x DShot600 Digital Lines",
+      "description": "Digital pulse packets transmitted at 600 kbps directing exact motor rotational velocities."
+    },
+    {
+      "from": "esc_4in1",
+      "to": "motor_fr",
+      "type": "power",
+      "label": "3-Phase AC Commutation",
+      "description": "Triple high-strand copper wires transmitting high-frequency AC current pulses."
+    },
+    {
+      "from": "esc_4in1",
+      "to": "motor_fl",
+      "type": "power",
+      "label": "3-Phase AC Commutation",
+      "description": "Triple high-strand copper wires transmitting high-frequency AC current pulses."
+    },
+    {
+      "from": "esc_4in1",
+      "to": "motor_rl",
+      "type": "power",
+      "label": "3-Phase AC Commutation",
+      "description": "Triple high-strand copper wires transmitting high-frequency AC current pulses."
+    },
+    {
+      "from": "esc_4in1",
+      "to": "motor_rr",
+      "type": "power",
+      "label": "3-Phase AC Commutation",
+      "description": "Triple high-strand copper wires transmitting high-frequency AC current pulses."
+    },
+    {
+      "from": "elrs_receiver",
+      "to": "flight_controller",
+      "type": "data",
+      "label": "CRSF Telemetry UART",
+      "description": "High-baud serial data stream transmitting roll, pitch, yaw, and throttle commands."
+    },
+    {
+      "from": "fpv_camera",
+      "to": "flight_controller",
+      "type": "signal",
+      "label": "Analog CVBS Video In",
+      "description": "Raw camera video line passed into FC MAX7456 OSD chip to overlay live telemetry text."
+    },
+    {
+      "from": "flight_controller",
+      "to": "vtx_unit",
+      "type": "signal",
+      "label": "Video Out with OSD Overlay",
+      "description": "Composite video line carrying camera imagery merged with battery voltage and flight mode OSD text."
+    },
+    {
+      "from": "motor_fr",
+      "to": "propellers",
+      "type": "mechanical",
+      "label": "M5 Shaft Locknut Torque",
+      "description": "Mechanical friction lock clamping propeller hub securely to rotating motor bell."
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "prop_spin",
+      "name": "Propeller Aerodynamic Rotation",
+      "type": "spin",
+      "targets": ["propellers", "motor_fr", "motor_fl", "motor_rl", "motor_rr"],
+      "axis": [0, 1, 0],
+      "speed": 2.5,
+      "direction": 1,
+      "explanation": "High-speed rotation creates aerodynamic pressure differential across propeller blade surfaces, yielding upward thrust."
+    },
+    {
+      "id": "fc_led_blink",
+      "name": "Arming Status Telemetry LED",
+      "type": "blink",
+      "targets": ["flight_controller"],
+      "speed": 1.2,
+      "explanation": "Blinks blue when acquiring gyro zero calibration; illuminates solid when armed and ready for flight."
+    },
+    {
+      "id": "power_pulse",
+      "name": "6S High-Current Discharge Flow",
+      "type": "pulse_flow",
+      "targets": ["lipo_battery", "esc_4in1"],
+      "speed": 1.0,
+      "explanation": "Visualizes high-discharge current flow from chemical cells through MOSFET switching arrays."
+    }
+  ],
+  "assemblySteps": [
+    {
+      "order": 1,
+      "componentIds": ["carbon_frame"],
+      "instruction": "Assemble carbon unibody frame, tightening titanium M3 arm hardware to 1.8 N·m."
+    },
+    {
+      "order": 2,
+      "componentIds": ["esc_4in1"],
+      "instruction": "Mount 4-in-1 ESC on rubber isolation grommets in bottom center bay and solder XT60 power pigtail."
+    },
+    {
+      "order": 3,
+      "componentIds": ["motor_fr", "motor_fl", "motor_rl", "motor_rr"],
+      "instruction": "Bolt 2207 brushless motors to arm tips using loctite and solder 3-phase wire leads to ESC pads."
+    },
+    {
+      "order": 4,
+      "componentIds": ["flight_controller", "elrs_receiver"],
+      "instruction": "Stack Flight Controller above ESC with vibration dampeners; connect 8-pin harness and wire ELRS receiver to UART1."
+    },
+    {
+      "order": 5,
+      "componentIds": ["fpv_camera", "vtx_unit"],
+      "instruction": "Install FPV camera between TPU front brackets and mount VTX in rear with antenna protruding 45° aft."
+    },
+    {
+      "order": 6,
+      "componentIds": ["lipo_battery", "propellers"],
+      "instruction": "Strap 6S battery to top plate with silicone-coated kevlar strap and tighten self-locking M5 nylon nuts on propellers."
+    }
+  ],
+  "experiments": [
+    {
+      "id": "exp_remove_prop",
+      "title": "Loss of Front-Right Propeller",
+      "action": "remove",
+      "targets": ["propellers", "motor_fr"],
+      "consequence": "Uncontrollable pitch-roll torque divergence and instant ground rollover.",
+      "explanation": "Quadcopter flight requires balanced thrust vectors across all four corners. Loss of one rotor removes 25% lift and breaks pitch/roll equilibrium, causing the PID loop to saturate and the craft to tumble within 80ms."
+    },
+    {
+      "id": "exp_esc_overload",
+      "title": "ESC Thermal Overload (FET Desync)",
+      "action": "overload",
+      "targets": ["esc_4in1"],
+      "consequence": "MOSFET junction temperature exceeds 125°C, causing commutation timing desync and motor stall.",
+      "explanation": "Continuous full-throttle flight without adequate airflow overheats the low-side N-channel MOSFETs. The gate driver loses back-EMF zero-crossing detection, triggering hardware thermal shutdown."
+    },
+    {
+      "id": "exp_reverse_motor",
+      "title": "Reverse Rear-Left Motor Direction",
+      "action": "reverse",
+      "targets": ["motor_rl"],
+      "consequence": "Severe yaw spin-out and loss of rotational heading hold.",
+      "explanation": "Standard quadcopters counter-balance aerodynamic torque with 2 CW and 2 CCW motors. Reversing one motor makes three rotors spin clockwise and only one counter-clockwise, producing an inescapable 3:1 net yaw torque."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "SeeLearn - Gesture-Controlled 3D Engineering Tutor",
+  "description": "Prompt-driven, hand-gesture-controlled 3D engineering tutor for OpenCV + AWS, featuring interactive hardware exploration and real-time vision raycasting.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

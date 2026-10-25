@@ -1,0 +1,304 @@
+{
+  "schemaVersion": 1,
+  "topic": "smartphone",
+  "title": "Modern Flagship Smartphone",
+  "overview": "High-density stacked mobile computing architecture integrating an OLED display, multilayer logic board, 4nm System-on-Chip (SoC), triple-lens camera module, and lithium pouch battery.",
+  "scaleNote": "Approx. 1:1 scale (6.7-inch display form factor)",
+  "layoutStyle": "stack",
+  "learningObjectives": [
+    "Examine stacked multilayer PCB architecture and high-density interconnects (HDI)",
+    "Trace vapor chamber thermal dissipation paths from the 4nm SoC to the aluminum chassis",
+    "Analyze power delivery from the 3.85V lithium-ion battery through PMICs to sub-1V logic rails",
+    "Inspect the MIPI CSI-2 high-speed image sensor pipeline to the neural processing unit (NPU)"
+  ],
+  "components": [
+    {
+      "id": "oled_display",
+      "name": "LTPO AMOLED Display Panel",
+      "group": "Interface & Display",
+      "parts": [
+        { "shape": "box", "size": [2.6, 5.2, 0.05], "position": [0, 0, 0.35], "material": "glass" },
+        { "shape": "box", "size": [2.5, 5.0, 0.02], "position": [0, 0, 0.32], "material": "silicon_die" },
+        { "shape": "box", "size": [2.64, 5.24, 0.02], "position": [0, 0, 0.38], "material": "smoked_glass" }
+      ],
+      "summary": "Flexible low-temperature polycrystalline oxide (LTPO) AMOLED panel with dynamic 1-120Hz variable refresh rate.",
+      "howItWorks": "Millions of sub-pixel organic light-emitting diodes emit individual RGB light directly without requiring a backlight, covered by scratch-resistant chemically strengthened ceramic glass.",
+      "whyNeeded": "Provides the primary interactive visual output and multi-touch capacitive digitizer interface.",
+      "keyFacts": [
+        "2800 x 1260 resolution @ 460 PPI",
+        "2600 nits peak outdoor brightness",
+        "LTPO 3.0 backplane for sub-1Hz idle power saving"
+      ],
+      "confidence": "high",
+      "explode": [0, 0, 1.2]
+    },
+    {
+      "id": "chassis_frame",
+      "name": "Aerospace Aluminum Mid-Frame",
+      "group": "Structure",
+      "parts": [
+        { "shape": "box", "size": [2.7, 5.3, 0.28], "position": [0, 0, 0], "material": "brushed_metal" },
+        { "shape": "box", "size": [2.4, 4.9, 0.22], "position": [0, 0, 0.02], "material": "polished_metal" }
+      ],
+      "summary": "CNC-machined 7000-series aluminum structural unibody acting as rigid skeleton, thermal heat sink, and antenna ground plane.",
+      "howItWorks": "Separates the display from internal electronics, resists torsional bending stresses, and absorbs drop impact energy.",
+      "whyNeeded": "Protects fragile glass panels and dense microelectronics from flexural fracture during daily handling.",
+      "keyFacts": [
+        "7075-T6 anodized aluminum alloy",
+        "Integrated dielectric antenna isolation bands",
+        "IP68 dust and water immersion seal perimeter"
+      ],
+      "confidence": "high",
+      "explode": [0, 0, 0]
+    },
+    {
+      "id": "main_logic_board",
+      "name": "Tiered Main Logic Board (PCB)",
+      "group": "Computing Core",
+      "parts": [
+        { "shape": "box", "size": [2.2, 2.1, 0.08], "position": [0, 1.4, 0.12], "material": "pcb_black" },
+        { "shape": "box", "size": [2.0, 1.9, 0.06], "position": [0, 1.4, 0.16], "material": "aluminum_heatsink" }
+      ],
+      "summary": "Stacked 10-layer substrate-like PCB (SLP) packed with micro-vias and RF shielding cans.",
+      "howItWorks": "Routes thousands of microscopic differential traces between the processor, memory, power regulators, and wireless transceivers.",
+      "whyNeeded": "Enables extreme component density in minimal volume through 3D stacked interposer soldering.",
+      "keyFacts": [
+        "Substrate-Like PCB (SLP) with 25µm trace widths",
+        "Interposer board-to-board solder ball array",
+        "Nickel-plated RF EMI shielding cans"
+      ],
+      "confidence": "high",
+      "explode": [0, 0.5, 0.6]
+    },
+    {
+      "id": "soc_chip",
+      "name": "4nm System-on-Chip (SoC)",
+      "group": "Computing Core",
+      "parts": [
+        { "shape": "box", "size": [0.65, 0.65, 0.04], "position": [0.2, 1.5, 0.18], "material": "silicon_die" },
+        { "shape": "box", "size": [0.72, 0.72, 0.03], "position": [0.2, 1.5, 0.22], "material": "gold" }
+      ],
+      "summary": "Heterogeneous application processor integrating an 8-core CPU, high-performance GPU, 16-core NPU, and 5G baseband modem.",
+      "howItWorks": "Executes the mobile operating system, runs neural network inference, and encodes 4K/8K video using billions of nanometer transistors.",
+      "whyNeeded": "Delivers all compute power while maintaining strict 3-watt thermal power constraints.",
+      "keyFacts": [
+        "4nm FinFET / GAAFET silicon fabrication process",
+        "Package-on-Package (PoP) 16GB LPDDR5X RAM stacked directly on top",
+        "Over 15 billion integrated transistors"
+      ],
+      "confidence": "high",
+      "explode": [0.4, 0.6, 0.8]
+    },
+    {
+      "id": "vapor_chamber",
+      "name": "Copper Vapor Chamber Heat Spreader",
+      "group": "Thermal Management",
+      "parts": [
+        { "shape": "box", "size": [1.8, 2.6, 0.03], "position": [0, 0.8, 0.06], "material": "copper" }
+      ],
+      "summary": "Ultra-thin sealed copper plate containing sintered copper capillary wick and deionized water working fluid.",
+      "howItWorks": "Liquid water evaporates at the hot SoC contact zone, travels as vapor across the chamber, condenses on cooler regions, and returns via capillary action.",
+      "whyNeeded": "Prevents silicon thermal throttling during intensive 3D rendering or fast battery charging.",
+      "keyFacts": [
+        "0.35mm ultra-slim cross-section thickness",
+        "Thermal conductivity exceeding 10,000 W/(m·K)",
+        "Spans from CPU hotspot across aluminum mid-frame"
+      ],
+      "confidence": "high",
+      "explode": [0, 0, -0.4]
+    },
+    {
+      "id": "battery_pouch",
+      "name": "5000mAh Lithium-Polymer Battery",
+      "group": "Power System",
+      "parts": [
+        { "shape": "box", "size": [2.2, 2.7, 0.18], "position": [0, -1.0, 0.08], "material": "aluminum_heatsink" },
+        { "shape": "box", "size": [0.6, 0.15, 0.04], "position": [0, 0.45, 0.14], "material": "pcb_black" }
+      ],
+      "summary": "High-density single-cell lithium-ion pouch cell with silicon-carbon anode technology.",
+      "howItWorks": "Intercalates lithium ions between graphite/silicon anode and lithium cobalt oxide cathode during charge/discharge cycles.",
+      "whyNeeded": "Provides DC electrical power (3.85V nominal, 19.3 Wh capacity) powering all internal subsystems for over a day of continuous use.",
+      "keyFacts": [
+        "5000 mAh capacity (19.3 Watt-hours)",
+        "Supports 80W wired SuperVOOC fast charging",
+        "Integrated dual-MOSFET safety protection flex circuit"
+      ],
+      "confidence": "high",
+      "explode": [0, -0.6, 0.5]
+    },
+    {
+      "id": "camera_module",
+      "name": "Triple-Lens Optical Camera Module",
+      "group": "Sensors & Imaging",
+      "parts": [
+        { "shape": "box", "size": [1.1, 1.2, 0.32], "position": [-0.5, 1.7, 0.18], "material": "black_plastic" },
+        { "shape": "cylinder", "size": [0.22, 0.1], "position": [-0.65, 1.9, 0.35], "rotation": [1.57, 0, 0], "material": "glass" },
+        { "shape": "cylinder", "size": [0.18, 0.1], "position": [-0.65, 1.45, 0.35], "rotation": [1.57, 0, 0], "material": "glass" },
+        { "shape": "cylinder", "size": [0.2, 0.1], "position": [-0.2, 1.7, 0.35], "rotation": [1.57, 0, 0], "material": "glass" }
+      ],
+      "summary": "Precision optical assembly featuring a 50MP wide sensor with sensor-shift OIS, ultra-wide, and periscope telephoto.",
+      "howItWorks": "Directs photons through 7P aspherical molded plastic lenses onto quad-bayer CMOS image sensors with voice coil motor (VCM) autofocus.",
+      "whyNeeded": "Enables professional computational photography, optical zoom, and 4K Dolby Vision HDR video recording.",
+      "keyFacts": [
+        "50MP 1/1.3-inch primary sensor with f/1.7 aperture",
+        "Sensor-shift 3-axis Optical Image Stabilization (OIS)",
+        "MIPI CSI-2 4-lane high-speed data interface"
+      ],
+      "confidence": "high",
+      "explode": [-0.8, 0.8, 0.9]
+    },
+    {
+      "id": "haptic_motor",
+      "name": "X-Axis Linear Resonant Haptic Actuator",
+      "group": "Interface & Display",
+      "parts": [
+        { "shape": "box", "size": [0.65, 0.35, 0.14], "position": [0.7, -2.1, 0.1], "material": "polished_metal" }
+      ],
+      "summary": "Precision electromagnetic vibration motor providing tactile click and scroll wheel sensations.",
+      "howItWorks": "Suspends a tungsten mass between linear leaf springs, driving it back and forth using pulsed AC electromagnetic coils at resonant frequency.",
+      "whyNeeded": "Replaces mechanical click switches with crisp, responsive synthetic haptic feedback.",
+      "keyFacts": [
+        "170 Hz resonant oscillation frequency",
+        "Sub-10ms vibration startup and braking response",
+        "Tungsten high-density moving mass"
+      ],
+      "confidence": "high",
+      "explode": [0.6, -0.6, 0.4]
+    },
+    {
+      "id": "usbc_flex",
+      "name": "USB-C Sub-Board & Port",
+      "group": "Power System",
+      "parts": [
+        { "shape": "box", "size": [1.8, 0.5, 0.06], "position": [0, -2.4, 0.1], "material": "pcb_black" },
+        { "shape": "box", "size": [0.45, 0.2, 0.12], "position": [0, -2.58, 0.1], "material": "polished_metal" }
+      ],
+      "summary": "Bottom flex PCB assembly housing the USB 3.2 Gen 2 Type-C connector, primary microphone, and fast-charge routing.",
+      "howItWorks": "Receives 20V/4A Power Delivery electricity and transfers 10 Gbps differential data lines to the main board via a flexible ribbon cable.",
+      "whyNeeded": "Provides external wired charging, high-speed data transfer, and DisplayPort video out.",
+      "keyFacts": [
+        "USB 3.2 Gen 2 (10 Gbps) data rate",
+        "Reinforced stainless steel retention brackets",
+        "TVS diode surge protection"
+      ],
+      "confidence": "high",
+      "explode": [0, -0.8, 0.2]
+    }
+  ],
+  "connections": [
+    {
+      "from": "battery_pouch",
+      "to": "main_logic_board",
+      "type": "power",
+      "label": "VBAT 3.85V Main Rail",
+      "description": "High-amperage flex connector delivering direct battery chemical voltage into the power management integrated circuits."
+    },
+    {
+      "from": "usbc_flex",
+      "to": "battery_pouch",
+      "type": "power",
+      "label": "Fast Charge Power Delivery",
+      "description": "Step-down charge pump circuit feeding high-current DC into the battery during wired charging."
+    },
+    {
+      "from": "main_logic_board",
+      "to": "soc_chip",
+      "type": "power",
+      "label": "Sub-1V Core Power Rails",
+      "description": "Multiphase buck converters supplying ultra-clean 0.75V to 1.05V to CPU/GPU silicon cores."
+    },
+    {
+      "from": "camera_module",
+      "to": "soc_chip",
+      "type": "data",
+      "label": "MIPI CSI-2 High-Speed Bus",
+      "description": "Four differential data lanes streaming raw uncompressed pixel data at 2.5 Gbps per lane directly to the ISP."
+    },
+    {
+      "from": "soc_chip",
+      "to": "oled_display",
+      "type": "signal",
+      "label": "MIPI DSI Video Interface",
+      "description": "High-bandwidth differential video interface transmitting 120 FPS rendered frames with HDR metadata."
+    },
+    {
+      "from": "soc_chip",
+      "to": "vapor_chamber",
+      "type": "thermal",
+      "label": "Thermal Conduction Interface",
+      "description": "Phase-change thermal paste transferring CPU hotspot heat into the copper vapor chamber."
+    },
+    {
+      "from": "main_logic_board",
+      "to": "haptic_motor",
+      "type": "signal",
+      "label": "Waveform Haptic Drive Signal",
+      "description": "Audio-class amplifier outputting synthetic sinusoidal drive waveforms to the linear actuator."
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "haptic_vibration",
+      "name": "X-Axis Haptic Resonant Motion",
+      "type": "oscillate",
+      "targets": ["haptic_motor"],
+      "axis": [1, 0, 0],
+      "speed": 3.0,
+      "direction": 1,
+      "explanation": "Linear electromagnetic actuator oscillates the tungsten weight along the X-axis, generating localized tactile sensations."
+    },
+    {
+      "id": "data_pipeline",
+      "name": "MIPI Camera Pipeline Data Flow",
+      "type": "pulse_flow",
+      "targets": ["camera_module", "soc_chip", "oled_display"],
+      "speed": 1.2,
+      "explanation": "Illustrates raw image sensor stream entering the ISP, processed by AI algorithms, and displayed on the OLED screen."
+    }
+  ],
+  "assemblySteps": [
+    {
+      "order": 1,
+      "componentIds": ["chassis_frame", "vapor_chamber"],
+      "instruction": "Insert copper vapor chamber into mid-frame recess and apply thermal graphite sheets."
+    },
+    {
+      "order": 2,
+      "componentIds": ["oled_display"],
+      "instruction": "Laminate flexible AMOLED display to front frame with pressure-sensitive waterproof adhesive."
+    },
+    {
+      "order": 3,
+      "componentIds": ["main_logic_board", "soc_chip"],
+      "instruction": "Mount stacked logic board into top chassis cavity and torque grounding screws."
+    },
+    {
+      "order": 4,
+      "componentIds": ["camera_module", "haptic_motor", "usbc_flex"],
+      "instruction": "Press-fit camera module, install linear haptic motor, and secure bottom USB-C flex assembly."
+    },
+    {
+      "order": 5,
+      "componentIds": ["battery_pouch"],
+      "instruction": "Place 5000mAh lithium-polymer pouch battery into frame well using pull-tab adhesive strips and plug in main power flex."
+    }
+  ],
+  "experiments": [
+    {
+      "id": "exp_thermal_throttle",
+      "title": "Vapor Chamber Puncture / Thermal Overload",
+      "action": "overload",
+      "targets": ["vapor_chamber", "soc_chip"],
+      "consequence": "SoC reaches 105°C junction temperature, throttling clock frequencies by 65% to avoid silicon damage.",
+      "explanation": "Without working fluid in the vapor chamber, thermal conductivity plummets from 10,000 W/(m·K) to standard copper conduction. Heat traps at the 4nm die, triggering emergency hardware thermal throttling."
+    },
+    {
+      "id": "exp_battery_disconnect",
+      "title": "Battery Protection Circuit Trip",
+      "action": "disable",
+      "targets": ["battery_pouch"],
+      "consequence": "Instantaneous total loss of mobile power; device resets immediately.",
+      "explanation": "Mobile phones lack large reservoir capacitors. Disconnecting the battery shuts down the PMIC power tree in microseconds, halting CPU execution instantly."
+    }
+  ]
+}
