@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { SceneSpec } from './types/sceneSpec';
-import { DEFAULT_SAMPLE, getSampleByTopic } from './data/samples/samplesIndex';
+import { DEFAULT_SAMPLE, getSampleByTopic, addRecentModel } from './data/samples/samplesIndex';
 import { seeLearnApiClient } from './services/awsClient';
 import { PromptScreen } from './components/screens/PromptScreen';
 import { LoadingScreen } from './components/screens/LoadingScreen';
@@ -15,18 +15,33 @@ export default function App() {
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const generationRunId = useRef(0);
 
   // Triggered when user enters a prompt or clicks Run
   const handleRunPrompt = async (promptText: string) => {
+    seeLearnApiClient.cancelGeneration();
+    const runId = ++generationRunId.current;
     setActivePrompt(promptText);
     setLoadingError(null);
-    setIsGenerating(true);
+    setNotice(null);
+    setIsGenerating(false);
     setScreen('loading');
+
+    if (!seeLearnApiClient.getEndpoint()) {
+      setLoadingError(
+        'Generation needs the AWS backend. Choose a model from the library instead.'
+      );
+      return;
+    }
+
+    setIsGenerating(true);
 
     try {
       const result = await seeLearnApiClient.generateSceneSpec(promptText);
+      if (runId !== generationRunId.current) return;
 
       if (result.success && result.spec) {
+        addRecentModel(result.spec);
         setActiveSpec(result.spec);
         if (result.isOffline && result.error) {
           setNotice(result.error);
@@ -35,38 +50,49 @@ export default function App() {
         }
         setScreen('workspace');
       } else if (result.refusal) {
-        setLoadingError(`Request Refused: ${result.refusal}`);
+        setLoadingError(result.refusal);
       } else {
-        setLoadingError(result.error || 'Failed to generate assembly. Connect the AWS backend to generate new topics.');
+        setLoadingError('The generation backend is not ready. Open a sample instead.');
       }
     } catch (err: any) {
+      if (runId !== generationRunId.current) return;
       console.warn('Generation error:', err);
-      setLoadingError(err?.message || 'Failed to generate scene spec.');
+      setLoadingError('The generation backend is not ready. Open a sample instead.');
     } finally {
-      setIsGenerating(false);
+      if (runId === generationRunId.current) setIsGenerating(false);
     }
   };
 
   const handleSelectSpec = (spec: SceneSpec) => {
+    addRecentModel(spec);
     setActiveSpec(spec);
     setNotice(null);
     setScreen('workspace');
   };
 
   const handleBackToPrompt = () => {
+    seeLearnApiClient.cancelGeneration();
+    generationRunId.current++;
     setScreen('prompt');
   };
 
-  const handleOpenSampleFromLoading = () => {
-    const fallback = getSampleByTopic(activePrompt) || DEFAULT_SAMPLE;
-    setActiveSpec(fallback);
+  const handleOpenSampleFromLoading = (chosenSpec?: SceneSpec) => {
+    seeLearnApiClient.cancelGeneration();
+    generationRunId.current++;
+    const target = chosenSpec || getSampleByTopic(activePrompt) || DEFAULT_SAMPLE;
+    addRecentModel(target);
+    setActiveSpec(target);
+    setLoadingError(null);
+    setIsGenerating(false);
+    setNotice(null);
     setScreen('workspace');
   };
 
   return (
-    <div className="w-full h-full min-h-screen bg-[#070B14]">
+    <div className="w-full h-full min-h-screen" style={{ backgroundColor: 'var(--sl-bg-base)' }}>
       {screen === 'prompt' && (
         <PromptScreen
+          initialPrompt={activePrompt}
           onRunPrompt={handleRunPrompt}
           onSelectSpec={handleSelectSpec}
         />
@@ -78,7 +104,9 @@ export default function App() {
           isGenerating={isGenerating}
           onOpenSample={handleOpenSampleFromLoading}
           error={loadingError}
-          onRetry={() => handleRunPrompt(activePrompt)}
+          onRetry={seeLearnApiClient.getEndpoint() ? () => handleRunPrompt(activePrompt) : undefined}
+          onBackToLibrary={handleBackToPrompt}
+          onEditTopic={handleBackToPrompt}
         />
       )}
 
@@ -87,19 +115,31 @@ export default function App() {
           <WorkspaceScreen
             spec={activeSpec}
             onBackToPrompt={handleBackToPrompt}
+            onSelectSpec={handleSelectSpec}
             onRegenerate={() => handleRunPrompt(activePrompt)}
           />
 
           {notice && (
-            <div className="fixed bottom-20 right-6 z-50 max-w-sm bg-slate-900 border border-sky-500/40 text-slate-200 p-4 rounded-xl shadow-2xl text-xs flex flex-col gap-2">
-              <span className="font-bold text-sky-400 uppercase text-[10px]">
+            <div
+              className="fixed bottom-20 right-6 z-50 max-w-sm p-4 rounded-xl shadow-2xl text-xs flex flex-col gap-2 border"
+              style={{
+                backgroundColor: 'var(--sl-bg-surface)',
+                borderColor: 'var(--sl-accent)',
+                color: 'var(--sl-text-primary)',
+              }}
+            >
+              <span className="font-bold uppercase tracking-wider text-xs" style={{ color: 'var(--sl-accent)' }}>
                 System Notice
               </span>
-              <p className="text-slate-300">{notice}</p>
+              <p style={{ color: 'var(--sl-text-secondary)' }}>{notice}</p>
               <button
                 type="button"
                 onClick={() => setNotice(null)}
-                className="self-end px-2.5 py-1 rounded bg-sky-500 text-slate-950 font-bold text-[11px] hover:bg-sky-400 cursor-pointer"
+                className="self-end px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--sl-accent)',
+                  color: '#ffffff',
+                }}
               >
                 Dismiss
               </button>

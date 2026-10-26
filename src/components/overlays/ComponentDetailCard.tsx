@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Zap, 
-  Share2, 
-  Info, 
-  HelpCircle, 
-  Send, 
-  Search, 
+import {
+  HelpCircle,
+  Send,
   ChevronRight,
   ShieldCheck,
   CheckCircle2,
-  AlertCircle
+  XCircle,
+  X,
+  Sparkles,
+  BookOpen,
+  ArrowRight,
+  RotateCcw,
 } from 'lucide-react';
-import { SceneSpec, SceneComponent, ConfidenceLevel } from '../../types/sceneSpec';
+import { SceneSpec, SceneComponent, ConfidenceLevel, ConnectionType } from '../../types/sceneSpec';
 import { seeLearnApiClient, ChatHistoryEntry } from '../../services/awsClient';
 
 interface ComponentDetailCardProps {
@@ -19,6 +20,14 @@ interface ComponentDetailCardProps {
   selectedComponentId: string | null;
   onSelectComponent: (id: string) => void;
   onInspectConnection?: (fromId: string, toId: string) => void;
+  onClose?: () => void;
+}
+
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
 }
 
 export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
@@ -26,14 +35,20 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
   selectedComponentId,
   onSelectComponent,
   onInspectConnection,
+  onClose,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'overview' | 'how' | 'connections' | 'facts' | 'ask'>('overview');
   const [chatQuestion, setChatQuestion] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatHistoryEntry[]>([]);
   const [isAnswering, setIsAnswering] = useState(false);
   const [networkNotice, setNetworkNotice] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(seeLearnApiClient.isOffline());
+
+  // Quiz state
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [quizScore, setQuizScore] = useState<number | null>(null);
 
   useEffect(() => {
     return seeLearnApiClient.onStatusChange((offline) => {
@@ -41,35 +56,86 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
     });
   }, []);
 
-  // Clear chat when selected component changes
-  useEffect(() => {
-    setChatMessages([]);
-    setNetworkNotice(null);
-  }, [selectedComponentId]);
-
-  // Derive unique groups from spec components
-  const groups = useMemo(() => {
-    const set = new Set<string>();
-    spec.components.forEach((c) => {
-      if (c.group) set.add(c.group);
-    });
-    return ['all', ...Array.from(set)];
-  }, [spec.components]);
-
-  // Filtered components
-  const filteredComponents = useMemo(() => {
-    return spec.components.filter((c) => {
-      const matchesSearch =
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.summary.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesGroup = groupFilter === 'all' || c.group === groupFilter;
-      return matchesSearch && matchesGroup;
-    });
-  }, [spec.components, searchQuery, groupFilter]);
-
   const selectedComponent = useMemo(() => {
     return spec.components.find((c) => c.id === selectedComponentId) || null;
   }, [spec.components, selectedComponentId]);
+
+  // Reset chat & quiz when selected component changes
+  useEffect(() => {
+    setChatMessages([]);
+    setNetworkNotice(null);
+    setIsQuizOpen(false);
+    setSelectedAnswers({});
+    setQuizScore(null);
+  }, [selectedComponentId]);
+
+  // Generate 3 multiple-choice questions from the component's spec text (purely offline, zero network needed)
+  const generateQuiz = () => {
+    if (!selectedComponent) return;
+
+    const otherComponents = spec.components.filter((c) => c.id !== selectedComponent.id);
+    const distractorsWhy = otherComponents.map((c) => c.whyNeeded).slice(0, 3);
+    while (distractorsWhy.length < 3) {
+      distractorsWhy.push('Provides passive acoustic dampening across the chassis frame.');
+    }
+
+    const distractorsHow = otherComponents.map((c) => c.howItWorks).slice(0, 3);
+    while (distractorsHow.length < 3) {
+      distractorsHow.push('Regulates thermal dissipation through convective airflow channels.');
+    }
+
+    const facts = selectedComponent.keyFacts && selectedComponent.keyFacts.length > 0
+      ? selectedComponent.keyFacts[0]
+      : `${selectedComponent.name} operates as a key part of the ${selectedComponent.group} subsystem.`;
+
+    const distractorFact1 = otherComponents[0]?.keyFacts?.[0] || 'Uses standardized M3 mounting spacing.';
+    const distractorFact2 = otherComponents[1]?.keyFacts?.[0] || 'Operating voltage is rated for standard 5V logic.';
+    const distractorFact3 = otherComponents[2]?.keyFacts?.[0] || 'Requires active feedback compensation.';
+
+    const q1Options = [selectedComponent.whyNeeded, ...distractorsWhy].sort(() => 0.5 - Math.random());
+    const q2Options = [selectedComponent.howItWorks, ...distractorsHow].sort(() => 0.5 - Math.random());
+    const q3Options = [facts, distractorFact1, distractorFact2, distractorFact3].sort(() => 0.5 - Math.random());
+
+    const generated: QuizQuestion[] = [
+      {
+        question: `What is the primary role of the ${selectedComponent.name}?`,
+        options: q1Options,
+        correctIndex: q1Options.indexOf(selectedComponent.whyNeeded),
+        explanation: `${selectedComponent.name} is needed because: ${selectedComponent.whyNeeded}`,
+      },
+      {
+        question: `How does the ${selectedComponent.name} physically work?`,
+        options: q2Options,
+        correctIndex: q2Options.indexOf(selectedComponent.howItWorks),
+        explanation: selectedComponent.howItWorks,
+      },
+      {
+        question: `Which engineering fact correctly describes the ${selectedComponent.name}?`,
+        options: q3Options,
+        correctIndex: q3Options.indexOf(facts),
+        explanation: facts,
+      },
+    ];
+
+    setQuizQuestions(generated);
+    setSelectedAnswers({});
+    setQuizScore(null);
+    setIsQuizOpen(true);
+  };
+
+  const handleSelectAnswer = (qIndex: number, optionIndex: number) => {
+    if (selectedAnswers[qIndex] !== undefined) return; // already answered
+    const nextAnswers = { ...selectedAnswers, [qIndex]: optionIndex };
+    setSelectedAnswers(nextAnswers);
+
+    if (Object.keys(nextAnswers).length === quizQuestions.length) {
+      let correctCount = 0;
+      quizQuestions.forEach((q, idx) => {
+        if (nextAnswers[idx] === q.correctIndex) correctCount++;
+      });
+      setQuizScore(correctCount);
+    }
+  };
 
   // Related connections
   const relatedConnections = useMemo(() => {
@@ -98,9 +164,9 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
       );
       setChatMessages((prev) => [...prev, { sender: 'tutor', text: response.answer }]);
       if (response.isOffline) {
-        setNetworkNotice('Offline mode: Grounded in reviewed template data.');
+        setNetworkNotice('Offline mode: Answer grounded in verified engineering facts.');
       }
-    } catch (err: any) {
+    } catch {
       setNetworkNotice('Answered using verified offline component facts.');
       const localResp = await seeLearnApiClient.explainSceneComponent(spec, selectedComponent.id, userQ);
       setChatMessages((prev) => [...prev, { sender: 'tutor', text: localResp.answer }]);
@@ -109,261 +175,533 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
     }
   };
 
+  const getConnectionTypeColor = (type: ConnectionType): string => {
+    switch (type) {
+      case 'power':
+        return 'var(--sl-conn-power)';
+      case 'signal':
+        return 'var(--sl-conn-signal)';
+      case 'data':
+        return 'var(--sl-conn-data)';
+      case 'mechanical':
+        return 'var(--sl-conn-mechanical)';
+      case 'thermal':
+        return 'var(--sl-conn-thermal)';
+      default:
+        return 'var(--sl-accent)';
+    }
+  };
+
   const confidenceBadge = (level: ConfidenceLevel = 'high') => {
     const config = {
-      high: { label: 'High Confidence', bg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
-      medium: { label: 'Medium Confidence', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
-      low: { label: 'Low Confidence', bg: 'bg-rose-500/10 text-rose-400 border-rose-500/30' },
+      high: { label: 'High Confidence', color: 'var(--sl-success)', bg: 'var(--sl-success-muted)' },
+      medium: { label: 'Medium Confidence', color: 'var(--sl-warning)', bg: 'var(--sl-warning-muted)' },
+      low: { label: 'Low Confidence', color: 'var(--sl-danger)', bg: 'var(--sl-danger-muted)' },
     };
     const c = config[level] || config.high;
     return (
-      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${c.bg}`}>
+      <span
+        className="text-xs font-mono px-2 py-0.5 rounded border"
+        style={{ color: c.color, backgroundColor: c.bg, borderColor: c.color }}
+      >
         {c.label}
       </span>
     );
   };
 
+  if (!selectedComponent) {
+    return (
+      <div
+        className="w-full h-full flex flex-col items-center justify-center p-6 text-center select-none"
+        style={{ backgroundColor: 'var(--sl-bg-surface)', color: 'var(--sl-text-muted)' }}
+      >
+        <BookOpen className="w-8 h-8 mb-2 opacity-50" />
+        <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--sl-text-primary)' }}>
+          No Component Selected
+        </h4>
+        <p className="text-xs max-w-xs leading-relaxed">
+          Select any part in the 3D canvas or component tree to inspect its engineering design, connections, and interactive quiz.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-80 md:w-96 h-full flex flex-col bg-[#0B132B]/95 backdrop-blur-md border-l border-slate-800 text-slate-200 select-none overflow-hidden">
-      {/* Search & Subsystem Filter Tabs */}
-      <div className="p-4 border-b border-slate-800 space-y-3 shrink-0">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search ${spec.components.length} components...`}
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
-          />
+    <div
+      className="w-full h-full flex flex-col select-none overflow-hidden"
+      style={{
+        backgroundColor: 'var(--sl-bg-surface)',
+        color: 'var(--sl-text-primary)',
+      }}
+    >
+      {/* Header: part name, subsystem chip, confidence badge, Quiz me button, close button */}
+      <div className="p-4 border-b shrink-0 space-y-2.5" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs font-mono uppercase px-2 py-0.5 rounded border font-medium"
+              style={{
+                backgroundColor: 'var(--sl-accent-muted)',
+                borderColor: 'var(--sl-border)',
+                color: 'var(--sl-accent)',
+              }}
+            >
+              {selectedComponent.group}
+            </span>
+            {confidenceBadge(selectedComponent.confidence)}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* Quiz Me button */}
+            <button
+              type="button"
+              onClick={generateQuiz}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer"
+              style={{
+                backgroundColor: isQuizOpen ? 'var(--sl-accent)' : 'var(--sl-accent-muted)',
+                borderColor: 'var(--sl-accent)',
+                color: isQuizOpen ? '#ffffff' : 'var(--sl-accent)',
+              }}
+              title="Test your knowledge with 3 interactive questions"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Quiz Me</span>
+            </button>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1 rounded-lg border transition cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--sl-bg-raised)',
+                  borderColor: 'var(--sl-border)',
+                  color: 'var(--sl-text-muted)',
+                }}
+                title="Close Inspector"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Horizontal scrollable group filters */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs">
-          {groups.map((grp) => (
-            <button
-              key={grp}
-              type="button"
-              onClick={() => setGroupFilter(grp)}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium whitespace-nowrap transition cursor-pointer capitalize ${
-                groupFilter === grp
-                  ? 'bg-sky-500 text-slate-950 font-semibold'
-                  : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              {grp}
-            </button>
-          ))}
+        <div>
+          <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--sl-text-primary)' }}>
+            {selectedComponent.name}
+          </h2>
+          {/* Why It Matters Callout */}
+          <div
+            className="mt-2 p-2.5 rounded-lg border text-xs leading-relaxed"
+            style={{
+              backgroundColor: 'var(--sl-bg-raised)',
+              borderColor: 'var(--sl-border-subtle)',
+            }}
+          >
+            <span className="font-semibold block mb-0.5" style={{ color: 'var(--sl-accent)' }}>
+              Why It Matters:
+            </span>
+            <span style={{ color: 'var(--sl-text-secondary)' }}>{selectedComponent.whyNeeded}</span>
+          </div>
         </div>
+
+        {/* 5 Tabs: Overview, How it works, Connections, Facts, Ask */}
+        {!isQuizOpen && (
+          <div
+            className="flex items-center gap-1 p-1 rounded-xl border text-xs font-medium overflow-x-auto"
+            style={{ backgroundColor: 'var(--sl-bg-base)', borderColor: 'var(--sl-border)' }}
+          >
+            {[
+              { id: 'overview', label: 'Overview' },
+              { id: 'how', label: 'How it works' },
+              { id: 'connections', label: `Connections (${relatedConnections.length})` },
+              { id: 'facts', label: 'Facts' },
+              { id: 'ask', label: 'Ask' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className="px-2.5 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer"
+                style={{
+                  backgroundColor: activeTab === tab.id ? 'var(--sl-bg-surface)' : 'transparent',
+                  color: activeTab === tab.id ? 'var(--sl-text-primary)' : 'var(--sl-text-secondary)',
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  boxShadow: activeTab === tab.id ? 'var(--sl-shadow-sm)' : 'none',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Main Scrollable Body */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-800/80">
-        {/* Component Selector Scroll List */}
-        <div className="p-3 max-h-44 overflow-y-auto space-y-1">
-          <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mb-1 px-1">
-            Components ({filteredComponents.length})
-          </div>
-          {filteredComponents.map((comp) => {
-            const isSelected = selectedComponent?.id === comp.id;
-            return (
+      {/* Main Tab Body - Independently scrollable, never clipped */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+        {/* Interactive Quiz Mode View */}
+        {isQuizOpen ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+              <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--sl-accent)' }}>
+                <Sparkles className="w-4 h-4" />
+                <span>Interactive Knowledge Check</span>
+              </div>
               <button
-                key={comp.id}
                 type="button"
-                onClick={() => onSelectComponent(comp.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition cursor-pointer ${
-                  isSelected
-                    ? 'bg-sky-500/15 border border-sky-500/50 text-sky-300 font-semibold shadow-sm'
-                    : 'hover:bg-slate-850 text-slate-300 hover:text-white'
-                }`}
+                onClick={() => setIsQuizOpen(false)}
+                className="text-xs font-medium cursor-pointer"
+                style={{ color: 'var(--sl-text-muted)' }}
               >
-                <span className="truncate">{comp.name}</span>
-                <span className="text-[10px] font-mono text-slate-500 ml-2 uppercase shrink-0">
-                  {comp.group}
-                </span>
+                Exit Quiz
               </button>
-            );
-          })}
-        </div>
-
-        {/* Selected Component Detailed Breakdown */}
-        {selectedComponent ? (
-          <div className="p-4 space-y-4">
-            {/* Header info */}
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                  {selectedComponent.group}
-                </span>
-                <div className="flex items-center gap-2">
-                  {confidenceBadge(selectedComponent.confidence)}
-                  <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Grounded
-                  </span>
-                </div>
-              </div>
-
-              <h3 className="text-base font-bold text-white font-['Outfit'] mt-1">
-                {selectedComponent.name}
-              </h3>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                {selectedComponent.summary}
-              </p>
-              <div className="text-[10px] text-slate-500 font-mono mt-1">
-                Simplified model: Procedural geometry represents physical component boundary.
-              </div>
             </div>
 
-            {/* Why Needed */}
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider font-mono">
-                Why It Is Needed
-              </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {selectedComponent.whyNeeded}
-              </p>
-            </div>
+            {quizQuestions.map((q, qIdx) => {
+              const selectedOpt = selectedAnswers[qIdx];
+              const isAnswered = selectedOpt !== undefined;
 
-            {/* How It Works */}
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider font-mono">
-                How It Works
-              </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {selectedComponent.howItWorks}
-              </p>
-            </div>
+              return (
+                <div
+                  key={qIdx}
+                  className="p-3.5 rounded-xl border space-y-2.5"
+                  style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)' }}
+                >
+                  <div className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--sl-text-primary)' }}>
+                    <span className="font-mono text-xs mr-1.5" style={{ color: 'var(--sl-accent)' }}>
+                      Q{qIdx + 1}.
+                    </span>
+                    {q.question}
+                  </div>
 
-            {/* Key Facts */}
-            {selectedComponent.keyFacts && selectedComponent.keyFacts.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                  Verified Engineering Facts
-                </span>
-                <ul className="space-y-1">
-                  {selectedComponent.keyFacts.map((fact, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                      <span className="text-sky-400 mt-0.5">•</span>
-                      <span>{fact}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+                  <div className="space-y-1.5">
+                    {q.options.map((opt, optIdx) => {
+                      const isChosen = selectedOpt === optIdx;
+                      const isCorrect = optIdx === q.correctIndex;
 
-            {/* Interconnections */}
-            {relatedConnections.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                  Direct Interconnections ({relatedConnections.length})
-                </span>
-                <div className="space-y-1.5">
-                  {relatedConnections.map((conn, idx) => {
-                    const isSource = conn.from === selectedComponent.id;
-                    const partnerId = isSource ? conn.to : conn.from;
-                    const partner = spec.components.find((c) => c.id === partnerId);
+                      let optBg = 'var(--sl-bg-surface)';
+                      let optBorder = 'var(--sl-border)';
+                      let optColor = 'var(--sl-text-secondary)';
 
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          onSelectComponent(partnerId);
-                          onInspectConnection?.(conn.from, conn.to);
-                        }}
-                        className="w-full p-2 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-sky-500/40 text-left text-xs transition cursor-pointer flex items-center justify-between group"
-                      >
-                        <div>
-                          <div className="font-medium text-slate-200 group-hover:text-sky-300 transition-colors">
-                            {conn.label}
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            {isSource ? '➔ Outputs to' : '⬅ Inputs from'}:{' '}
-                            <span className="text-slate-300 font-semibold">{partner?.name || partnerId}</span>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400 transition" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                      if (isAnswered) {
+                        if (isCorrect) {
+                          optBg = 'var(--sl-success-muted)';
+                          optBorder = 'var(--sl-success)';
+                          optColor = 'var(--sl-success)';
+                        } else if (isChosen) {
+                          optBg = 'var(--sl-danger-muted)';
+                          optBorder = 'var(--sl-danger)';
+                          optColor = 'var(--sl-danger)';
+                        }
+                      }
 
-            {/* Grounded Follow-Up Chat */}
-            <div className="pt-2 border-t border-slate-800/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">
-                  Hardware Q&A Tutor
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  {isOffline ? 'Offline grounded' : 'AWS Cloud grounded'}
-                </span>
-              </div>
+                      return (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          disabled={isAnswered}
+                          onClick={() => handleSelectAnswer(qIdx, optIdx)}
+                          className="w-full text-left p-2.5 rounded-lg border text-xs transition leading-relaxed flex items-start gap-2 cursor-pointer disabled:cursor-default"
+                          style={{
+                            backgroundColor: optBg,
+                            borderColor: optBorder,
+                            color: optColor,
+                          }}
+                        >
+                          <span className="font-mono shrink-0 mt-0.5">
+                            {String.fromCharCode(65 + optIdx)}.
+                          </span>
+                          <span className="flex-1">{opt}</span>
+                          {isAnswered && isCorrect && <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />}
+                          {isAnswered && isChosen && !isCorrect && <XCircle className="w-4 h-4 shrink-0 text-rose-500" />}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-              {/* Chat Message History */}
-              {chatMessages.length > 0 && (
-                <div className="space-y-2 max-h-48 overflow-y-auto p-2 bg-slate-950/60 rounded-xl border border-slate-800/80">
-                  {chatMessages.map((msg, idx) => (
+                  {isAnswered && (
                     <div
-                      key={idx}
-                      className={`text-xs p-2.5 rounded-lg leading-relaxed ${
-                        msg.sender === 'user'
-                          ? 'bg-sky-500/10 text-sky-200 border border-sky-500/20 ml-4'
-                          : 'bg-slate-900 text-slate-300 border border-slate-800 mr-4 whitespace-pre-wrap'
-                      }`}
+                      className="text-xs p-2.5 rounded-lg border leading-relaxed"
+                      style={{
+                        backgroundColor: 'var(--sl-bg-surface)',
+                        borderColor: 'var(--sl-border-subtle)',
+                        color: 'var(--sl-text-secondary)',
+                      }}
                     >
-                      <div className="text-[10px] font-mono text-slate-500 mb-0.5">
-                        {msg.sender === 'user' ? 'You' : 'SeeLearn Tutor'}
-                      </div>
-                      {msg.text}
-                    </div>
-                  ))}
-                  {isAnswering && (
-                    <div className="text-xs p-2 rounded-lg bg-slate-900 text-slate-400 animate-pulse">
-                      Retrieving grounded engineering facts...
+                      <span className="font-semibold block mb-0.5" style={{ color: 'var(--sl-accent)' }}>
+                        Explanation:
+                      </span>
+                      {q.explanation}
                     </div>
                   )}
                 </div>
-              )}
+              );
+            })}
 
-              {networkNotice && (
-                <div className="text-[10px] font-mono p-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                  {networkNotice}
+            {quizScore !== null && (
+              <div
+                className="p-4 rounded-xl border text-center space-y-2"
+                style={{ backgroundColor: 'var(--sl-accent-muted)', borderColor: 'var(--sl-accent)' }}
+              >
+                <div className="text-sm font-bold" style={{ color: 'var(--sl-text-primary)' }}>
+                  Quiz Complete: {quizScore} / {quizQuestions.length} Correct
                 </div>
-              )}
-
-              {/* Question Input */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatQuestion}
-                  onChange={(e) => setChatQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAskQuestion(chatQuestion);
-                    }
-                  }}
-                  placeholder={`Ask about ${selectedComponent.name}...`}
-                  className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
-                />
+                <p className="text-xs" style={{ color: 'var(--sl-text-secondary)' }}>
+                  {quizScore === quizQuestions.length
+                    ? 'Excellent mastery of this component.'
+                    : 'Good attempt. Review the explanation notes above.'}
+                </p>
                 <button
                   type="button"
-                  disabled={!chatQuestion.trim() || isAnswering}
-                  onClick={() => handleAskQuestion(chatQuestion)}
-                  className="px-3 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-slate-950 rounded-lg transition cursor-pointer"
+                  onClick={generateQuiz}
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
+                  style={{ backgroundColor: 'var(--sl-accent)', color: '#ffffff' }}
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  Try Again
                 </button>
               </div>
-            </div>
+            )}
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-500 text-xs">
-            Select a component from the 3D model or list above to inspect its engineering design and wiring.
-          </div>
+          <>
+            {/* TAB: Overview */}
+            {activeTab === 'overview' && (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--sl-text-muted)' }}>
+                    Functional Summary
+                  </h4>
+                  <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                    {selectedComponent.summary}
+                  </p>
+                </div>
+
+                <div
+                  className="p-3.5 rounded-xl border space-y-1.5"
+                  style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)' }}
+                >
+                  <span className="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--sl-text-muted)' }}>
+                    Physical Geometry & Scale
+                  </span>
+                  <div className="text-xs space-y-1" style={{ color: 'var(--sl-text-secondary)' }}>
+                    <div>
+                      Subsystem: <span className="font-medium capitalize" style={{ color: 'var(--sl-text-primary)' }}>{selectedComponent.group}</span>
+                    </div>
+                    <div>
+                      Procedural Parts: <span className="font-mono font-medium" style={{ color: 'var(--sl-text-primary)' }}>{selectedComponent.parts.length} geometry primitives</span>
+                    </div>
+                    <div>
+                      Primary Materials: <span className="font-mono text-xs" style={{ color: 'var(--sl-text-primary)' }}>
+                        {Array.from(new Set(selectedComponent.parts.map((p) => p.material))).join(', ')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: How It Works */}
+            {activeTab === 'how' && (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--sl-text-muted)' }}>
+                    Physical Principles of Operation
+                  </h4>
+                  <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                    {selectedComponent.howItWorks}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: Connections */}
+            {activeTab === 'connections' && (
+              <div className="space-y-3">
+                <div className="text-xs" style={{ color: 'var(--sl-text-muted)' }}>
+                  Interconnected subsystem paths for {selectedComponent.name}:
+                </div>
+
+                {relatedConnections.length === 0 ? (
+                  <div className="text-xs p-4 rounded-xl border text-center" style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-muted)' }}>
+                    No direct external connections recorded for this part.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {relatedConnections.map((conn, idx) => {
+                      const isSource = conn.from === selectedComponent.id;
+                      const partnerId = isSource ? conn.to : conn.from;
+                      const partner = spec.components.find((c) => c.id === partnerId);
+                      const typeColor = getConnectionTypeColor(conn.type);
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            onSelectComponent(partnerId);
+                            onInspectConnection?.(conn.from, conn.to);
+                          }}
+                          className="w-full p-3 rounded-xl border text-left text-xs transition cursor-pointer flex items-center justify-between group"
+                          style={{
+                            backgroundColor: 'var(--sl-bg-raised)',
+                            borderColor: 'var(--sl-border)',
+                          }}
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: typeColor }}
+                              />
+                              <span className="font-semibold text-xs" style={{ color: 'var(--sl-text-primary)' }}>
+                                {conn.label}
+                              </span>
+                              <span
+                                className="text-xs font-mono uppercase px-1.5 py-0.2 rounded border"
+                                style={{ color: typeColor, borderColor: typeColor }}
+                              >
+                                {conn.type}
+                              </span>
+                            </div>
+                            <div className="text-xs" style={{ color: 'var(--sl-text-muted)' }}>
+                              {isSource ? 'Outputs to' : 'Inputs from'}:{' '}
+                              <span className="font-semibold" style={{ color: 'var(--sl-text-secondary)' }}>
+                                {partner?.name || partnerId}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 transition group-hover:translate-x-0.5" style={{ color: 'var(--sl-text-muted)' }} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: Facts */}
+            {activeTab === 'facts' && (
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--sl-text-muted)' }}>
+                  Verified Engineering Facts
+                </div>
+                {selectedComponent.keyFacts && selectedComponent.keyFacts.length > 0 ? (
+                  <ul className="space-y-2">
+                    {selectedComponent.keyFacts.map((fact, idx) => (
+                      <li
+                        key={idx}
+                        className="p-2.5 rounded-lg border text-xs leading-relaxed flex items-start gap-2.5"
+                        style={{
+                          backgroundColor: 'var(--sl-bg-raised)',
+                          borderColor: 'var(--sl-border)',
+                          color: 'var(--sl-text-secondary)',
+                        }}
+                      >
+                        <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--sl-accent)' }} />
+                        <span>{fact}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-xs p-4 rounded-xl border text-center" style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-muted)' }}>
+                    No extra key facts defined for this component.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: Ask (Q&A Tutor) */}
+            {activeTab === 'ask' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs" style={{ color: 'var(--sl-text-muted)' }}>
+                  <span>Interactive Engineering Tutor</span>
+                  <span className="font-mono">{isOffline ? 'Offline Grounded' : 'AWS Cloud'}</span>
+                </div>
+
+                {chatMessages.length > 0 && (
+                  <div
+                    className="space-y-2.5 max-h-56 overflow-y-auto p-3 rounded-xl border"
+                    style={{ backgroundColor: 'var(--sl-bg-base)', borderColor: 'var(--sl-border)' }}
+                  >
+                    {chatMessages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className="text-xs p-2.5 rounded-lg leading-relaxed"
+                        style={{
+                          backgroundColor:
+                            msg.sender === 'user' ? 'var(--sl-accent-muted)' : 'var(--sl-bg-raised)',
+                          borderColor:
+                            msg.sender === 'user' ? 'var(--sl-accent)' : 'var(--sl-border-subtle)',
+                          color:
+                            msg.sender === 'user' ? 'var(--sl-text-primary)' : 'var(--sl-text-secondary)',
+                          marginLeft: msg.sender === 'user' ? '1.5rem' : '0',
+                          marginRight: msg.sender === 'user' ? '0' : '1.5rem',
+                          borderWidth: '1px',
+                        }}
+                      >
+                        <div className="font-mono text-xs mb-1" style={{ color: 'var(--sl-text-muted)' }}>
+                          {msg.sender === 'user' ? 'You' : 'SeeLearn Tutor'}
+                        </div>
+                        {msg.text}
+                      </div>
+                    ))}
+                    {isAnswering && (
+                      <div className="text-xs p-2 rounded-lg sl-pulse" style={{ color: 'var(--sl-accent)' }}>
+                        Retrieving grounded engineering facts...
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {networkNotice && (
+                  <div
+                    className="text-xs p-2 rounded-lg border font-mono"
+                    style={{
+                      backgroundColor: 'var(--sl-warning-muted)',
+                      borderColor: 'var(--sl-warning)',
+                      color: 'var(--sl-warning)',
+                    }}
+                  >
+                    {networkNotice}
+                  </div>
+                )}
+
+                {/* Prompt input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatQuestion}
+                    onChange={(e) => setChatQuestion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAskQuestion(chatQuestion);
+                      }
+                    }}
+                    placeholder={`Ask a question about ${selectedComponent.name}...`}
+                    className="flex-1 border rounded-lg px-3 py-2 text-xs focus:outline-none"
+                    style={{
+                      backgroundColor: 'var(--sl-bg-base)',
+                      borderColor: 'var(--sl-border)',
+                      color: 'var(--sl-text-primary)',
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!chatQuestion.trim() || isAnswering}
+                    onClick={() => handleAskQuestion(chatQuestion)}
+                    className="px-3 py-2 rounded-lg transition cursor-pointer disabled:opacity-40"
+                    style={{
+                      backgroundColor: 'var(--sl-accent)',
+                      color: '#ffffff',
+                    }}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

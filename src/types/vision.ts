@@ -1,8 +1,4 @@
-/**
- * SeeLearn Vision Service Types & Protocol Definitions
- */
-
-export type GestureState = 
+export type GestureState =
   | 'IDLE'
   | 'POINTING'
   | 'PINCH_START'
@@ -13,43 +9,36 @@ export type GestureState =
 export interface VisionMetrics {
   fps: number;
   confidence: number;
-  jitterPx: number; // Pixels standard deviation when stationary
+  jitterPx: number;
   lossEvents: number;
-  gestureAccuracy?: number;
-  captureLatencyMs?: number;
-  preprocessLatencyMs?: number;
-  trackingLatencyMs?: number;
-  claheEnabled?: boolean;
-  filterMode?: 'kalman' | 'one_euro' | 'none';
+  latencyMs: number;
 }
 
-/**
- * Exact specification message from OpenCV Python Service over WebSocket
- */
+/** Hand-tracking frame sent by the Python vision service. */
 export interface VisionWebSocketMessage {
-  cursor: { x: number; y: number }; // 0 to 1
-  state: GestureState;
-  rotateMode: boolean;
-  metrics: {
-    fps: number;
-    confidence: number;
-    jitterPx: number;
-    lossEvents: number;
-  };
-}
-
-export interface HandTrackingPacket {
-  timestamp: number;
+  camera?: boolean;
+  cameraError?: string;
   detected: boolean;
-  cursorNormalized: { x: number; y: number }; // [0, 1] mapped to viewport
-  cursorRaw?: { x: number; y: number };
+  cursorNormalized: { x: number; y: number };
+  cursorRaw: { x: number; y: number };
   gestureState: GestureState;
+  isOpenPalm: boolean;
   rotateMode: boolean;
-  pinchDistanceNormalized?: number;
-  isPinching: boolean;
-  isOpenPalm?: boolean;
+  pinchDistanceNormalized: number;
   metrics: VisionMetrics;
 }
+
+export interface VisionServiceState {
+  type: 'state';
+  camera?: boolean;
+  cameraError?: string;
+  clahe: boolean;
+  filter: 'kalman' | 'none';
+  calibrated: boolean;
+  calibrationSuccess?: boolean;
+}
+
+export interface HandTrackingPacket extends VisionWebSocketMessage {}
 
 export interface CalibrationRange {
   minX: number;

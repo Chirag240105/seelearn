@@ -1,38 +1,37 @@
-/**
- * SeeLearn Vision WebSocket Client
- * Connects to VITE_VISION_WS_URL and parses real-time hand-gesture packets.
- * 
- * Expected JSON message:
- * {
- *   cursor: { x: number, y: number }, // 0 to 1
- *   state: "IDLE" | "POINTING" | "PINCH_START" | "PINCH_HOLD" | "PINCH_RELEASE" | "PALM_ROTATE",
- *   rotateMode: boolean,
- *   metrics: { fps: number, confidence: number, jitterPx: number, lossEvents: number }
- * }
- * 
- * Auto-reconnects every 2 seconds.
- * If socket is down or URL empty: sets connected = false, UI displays "Gesture offline, using mouse",
- * while mouse/keyboard controls remain fully functional.
- */
-
-import { HandTrackingPacket, GestureState, VisionMetrics } from '../types/vision';
+import { HandTrackingPacket, VisionServiceState } from '../types/vision';
 
 type PacketCallback = (packet: HandTrackingPacket) => void;
 type StatusCallback = (isConnected: boolean, statusMessage: string) => void;
+type StateCallback = (state: VisionServiceState) => void;
 
 export class VisionWebSocketClient {
   private socket: WebSocket | null = null;
-  private wsUrl: string = '';
-  private reconnectIntervalMs: number = 2000; // 2 seconds reconnect
-  private reconnectTimer: NodeJS.Timeout | null = null;
-  private isConnected: boolean = false;
-  private packetListeners: Set<PacketCallback> = new Set();
-  private statusListeners: Set<StatusCallback> = new Set();
-  private shouldConnect: boolean = true;
+  private readonly wsUrl: string;
+  private readonly minReconnectDelayMs = 1000;
+  private readonly maxReconnectDelayMs = 8000;
+  private reconnectAttempts = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private isConnected = false;
+  private cameraOn = true;
+  private hasDetectedHand = false;
+  private shouldConnect = false;
+  private packetListeners = new Set<PacketCallback>();
+  private statusListeners = new Set<StatusCallback>();
+  private stateListeners = new Set<StateCallback>();
 
   constructor() {
     const rawUrl = (import.meta as any).env?.VITE_VISION_WS_URL;
     this.wsUrl = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        try {
+          this.sendAction('camera_off');
+        } catch {
+          // ignore
+        }
+      });
+    }
   }
 
   public getUrl(): string {
@@ -45,61 +44,43 @@ export class VisionWebSocketClient {
 
   public connect(): void {
     this.shouldConnect = true;
-
     if (!this.wsUrl) {
-      this.isConnected = false;
-      this.notifyStatus(false, 'Gesture offline, using mouse');
+      this.updateStatus();
       return;
     }
-
-    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
-      return;
+    if (this.socket && this.socket.readyState !== WebSocket.CLOSED) return;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
 
     try {
-      this.socket = new WebSocket(this.wsUrl);
-
-      this.socket.onopen = () => {
+      const socket = new WebSocket(this.wsUrl);
+      this.socket = socket;
+      socket.onopen = () => {
+        if (this.socket !== socket) return;
         this.isConnected = true;
-        this.notifyStatus(true, 'OpenCV Vision Connected');
-        if (this.reconnectTimer) {
-          clearTimeout(this.reconnectTimer);
-          this.reconnectTimer = null;
-        }
+        this.hasDetectedHand = false;
+        this.reconnectAttempts = 0;
+        this.updateStatus();
+        this.sendAction('get_state');
       };
-
-      this.socket.onmessage = (event) => {
-        try {
-          const rawData = JSON.parse(event.data);
-          const packet = this.parseAndValidateMessage(rawData);
-          if (packet) {
-            this.packetListeners.forEach((listener) => {
-              try {
-                listener(packet);
-              } catch (err) {
-                console.error('[VisionClient] Error in packet listener:', err);
-              }
-            });
-          }
-        } catch (parseErr) {
-          console.warn('[VisionClient] Received malformed message:', parseErr);
-        }
+      socket.onmessage = (event) => {
+        if (this.socket === socket) this.handleMessage(event.data);
       };
-
-      this.socket.onclose = () => {
+      socket.onerror = () => socket.close();
+      socket.onclose = () => {
+        if (this.socket !== socket) return;
+        this.socket = null;
         this.isConnected = false;
-        this.notifyStatus(false, 'Gesture offline, using mouse');
+        this.hasDetectedHand = false;
+        this.updateStatus();
         this.scheduleReconnect();
       };
-
-      this.socket.onerror = () => {
-        this.isConnected = false;
-        this.notifyStatus(false, 'Gesture offline, using mouse');
-        this.socket?.close();
-      };
-    } catch (err) {
+    } catch (error) {
+      console.warn('[VisionClient] WebSocket connection failed:', error);
       this.isConnected = false;
-      this.notifyStatus(false, 'Gesture offline, using mouse');
+      this.updateStatus();
       this.scheduleReconnect();
     }
   }
@@ -110,32 +91,42 @@ export class VisionWebSocketClient {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
+    const socket = this.socket;
     this.isConnected = false;
-    this.notifyStatus(false, 'Gesture offline, using mouse');
+    this.hasDetectedHand = false;
+    if (socket && socket.readyState !== WebSocket.CLOSED) socket.close();
+    this.updateStatus();
   }
 
-  public sendAction(action: string, payload: Record<string, any> = {}): boolean {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      try {
-        this.socket.send(JSON.stringify({ action, ...payload }));
-        return true;
-      } catch (err) {
-        console.warn('[VisionClient] Failed to send action to WebSocket:', err);
-      }
+  public sendAction(action: string, payload: Record<string, unknown> = {}): boolean {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return false;
+    try {
+      this.socket.send(JSON.stringify({ action, ...payload }));
+      return true;
+    } catch (error) {
+      console.warn('[VisionClient] Failed to send action:', error);
+      return false;
     }
-    return false;
   }
 
-  public toggleClahe(): void {
-    this.sendAction('toggle_clahe');
+  public turnCameraOn(): boolean {
+    return this.sendAction('camera_on');
   }
 
-  public setFilter(mode: 'kalman' | 'one_euro' | 'none'): void {
-    this.sendAction('set_filter', { mode });
+  public turnCameraOff(): boolean {
+    return this.sendAction('camera_off');
+  }
+
+  public getCameraOn(): boolean {
+    return this.cameraOn;
+  }
+
+  public toggleClahe(): boolean {
+    return this.sendAction('toggle_clahe');
+  }
+
+  public setFilter(value: 'kalman' | 'none'): boolean {
+    return this.sendAction('set_filter', { value });
   }
 
   public sendCalibrationSamples(samples: [number, number][]): boolean {
@@ -147,76 +138,96 @@ export class VisionWebSocketClient {
     return () => this.packetListeners.delete(callback);
   }
 
+  public onServiceState(callback: StateCallback): () => void {
+    this.stateListeners.add(callback);
+    return () => this.stateListeners.delete(callback);
+  }
+
   public onStatusChange(callback: StatusCallback): () => void {
     this.statusListeners.add(callback);
-    callback(this.isConnected, this.isConnected ? 'OpenCV Vision Connected' : 'Gesture offline, using mouse');
+    callback(this.isConnected, this.statusMessage());
     return () => this.statusListeners.delete(callback);
   }
 
-  private notifyStatus(connected: boolean, message: string): void {
-    this.statusListeners.forEach((fn) => fn(connected, message));
+  private handleMessage(payload: unknown): void {
+    try {
+      const data = JSON.parse(String(payload));
+      if (data?.type === 'state' && typeof data.clahe === 'boolean' &&
+          (data.filter === 'kalman' || data.filter === 'none') && typeof data.calibrated === 'boolean') {
+        if (typeof data.camera === 'boolean') {
+          this.cameraOn = data.camera;
+          this.updateStatus();
+        }
+        this.stateListeners.forEach((listener) => listener(data as VisionServiceState));
+        return;
+      }
+      if (!data || typeof data !== 'object') return;
+
+      if (typeof data.camera === 'boolean' && data.camera !== this.cameraOn) {
+        this.cameraOn = data.camera;
+        this.updateStatus();
+      }
+
+      if (typeof data.detected !== 'boolean' ||
+          !data.cursorNormalized || typeof data.cursorNormalized.x !== 'number' ||
+          typeof data.cursorNormalized.y !== 'number') return;
+
+      const validStates = ['IDLE', 'POINTING', 'PINCH_START', 'PINCH_HOLD', 'PINCH_RELEASE', 'PALM_ROTATE'];
+      const gestureState = validStates.includes(data.gestureState) ? data.gestureState : 'IDLE';
+      const rawMetrics = data.metrics || {};
+      const packet: HandTrackingPacket = {
+        camera: typeof data.camera === 'boolean' ? data.camera : this.cameraOn,
+        cameraError: data.cameraError,
+        detected: data.detected && this.cameraOn,
+        cursorNormalized: {
+          x: Math.max(0, Math.min(1, data.cursorNormalized.x)),
+          y: Math.max(0, Math.min(1, data.cursorNormalized.y)),
+        },
+        cursorRaw: data.cursorRaw && typeof data.cursorRaw.x === 'number' && typeof data.cursorRaw.y === 'number'
+          ? data.cursorRaw
+          : data.cursorNormalized,
+        gestureState: this.cameraOn ? gestureState : 'IDLE',
+        isOpenPalm: this.cameraOn && data.isOpenPalm === true,
+        rotateMode: this.cameraOn && data.rotateMode === true,
+        pinchDistanceNormalized: typeof data.pinchDistanceNormalized === 'number' ? data.pinchDistanceNormalized : 1,
+        metrics: {
+          fps: this.numberOrZero(rawMetrics.fps),
+          confidence: this.numberOrZero(rawMetrics.confidence),
+          jitterPx: this.numberOrZero(rawMetrics.jitterPx),
+          lossEvents: this.numberOrZero(rawMetrics.lossEvents),
+          latencyMs: this.numberOrZero(rawMetrics.latencyMs),
+        },
+      };
+      this.hasDetectedHand = packet.detected;
+      this.updateStatus();
+      this.packetListeners.forEach((listener) => listener(packet));
+    } catch (error) {
+      console.warn('[VisionClient] Received malformed message:', error);
+    }
+  }
+
+  private numberOrZero(value: unknown): number {
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  }
+
+  private statusMessage(): string {
+    if (!this.isConnected) return 'Vision service not running';
+    if (!this.cameraOn) return 'Camera off';
+    return this.hasDetectedHand ? 'Camera on' : 'Hand not detected';
+  }
+
+  private updateStatus(): void {
+    this.statusListeners.forEach((listener) => listener(this.isConnected, this.statusMessage()));
   }
 
   private scheduleReconnect(): void {
-    if (!this.shouldConnect || this.reconnectTimer) return;
+    if (!this.shouldConnect || this.reconnectTimer || !this.wsUrl) return;
+    const delay = Math.min(this.minReconnectDelayMs * (2 ** this.reconnectAttempts), this.maxReconnectDelayMs);
+    this.reconnectAttempts += 1;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      if (this.wsUrl && this.shouldConnect) {
-        this.connect();
-      }
-    }, this.reconnectIntervalMs);
-  }
-
-  /**
-   * Defensive parser ensuring zero crash on missing or unexpected fields
-   */
-  private parseAndValidateMessage(data: any): HandTrackingPacket | null {
-    if (!data || typeof data !== 'object') return null;
-
-    // 1. Extract Cursor coordinates safely [0, 1]
-    const rawCursor = data.cursor || data.cursorNormalized || { x: 0.5, y: 0.5 };
-    const x = typeof rawCursor.x === 'number' && !isNaN(rawCursor.x)
-      ? Math.max(0, Math.min(1, rawCursor.x))
-      : 0.5;
-    const y = typeof rawCursor.y === 'number' && !isNaN(rawCursor.y)
-      ? Math.max(0, Math.min(1, rawCursor.y))
-      : 0.5;
-
-    // 2. Extract State safely
-    const rawState = String(data.state || data.gestureState || 'IDLE').toUpperCase();
-    const validStates: GestureState[] = ['IDLE', 'POINTING', 'PINCH_START', 'PINCH_HOLD', 'PINCH_RELEASE', 'PALM_ROTATE'];
-    const gestureState: GestureState = validStates.includes(rawState as GestureState)
-      ? (rawState as GestureState)
-      : 'IDLE';
-
-    // 3. Extract Rotate Mode
-    const rotateMode = Boolean(data.rotateMode === true || data.isOpenPalm === true || gestureState === 'PALM_ROTATE');
-
-    // 4. Extract Metrics safely
-    const rawMetrics = data.metrics || {};
-    const metrics: VisionMetrics = {
-      fps: typeof rawMetrics.fps === 'number' && !isNaN(rawMetrics.fps) ? Math.round(rawMetrics.fps) : 0,
-      confidence: typeof rawMetrics.confidence === 'number' && !isNaN(rawMetrics.confidence) ? rawMetrics.confidence : 0,
-      jitterPx: typeof rawMetrics.jitterPx === 'number' && !isNaN(rawMetrics.jitterPx) ? rawMetrics.jitterPx : 0,
-      lossEvents: typeof rawMetrics.lossEvents === 'number' && !isNaN(rawMetrics.lossEvents) ? rawMetrics.lossEvents : 0,
-      gestureAccuracy: typeof rawMetrics.gestureAccuracy === 'number' ? rawMetrics.gestureAccuracy : undefined,
-      claheEnabled: typeof rawMetrics.claheEnabled === 'boolean' ? rawMetrics.claheEnabled : undefined,
-      filterMode: rawMetrics.filterMode || 'kalman',
-    };
-
-    const isPinching = gestureState === 'PINCH_START' || gestureState === 'PINCH_HOLD';
-
-    return {
-      timestamp: Date.now(),
-      detected: gestureState !== 'IDLE',
-      cursorNormalized: { x, y },
-      cursorRaw: { x, y },
-      gestureState,
-      rotateMode,
-      isPinching,
-      pinchDistanceNormalized: isPinching ? 0.2 : 0.75,
-      metrics,
-    };
+      if (this.shouldConnect) this.connect();
+    }, delay);
   }
 }
 

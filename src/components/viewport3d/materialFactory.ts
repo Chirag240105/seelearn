@@ -5,7 +5,7 @@ export interface MaterialStyleOptions {
   viewMode?: 'solid' | 'xray' | 'exploded';
   isSelected?: boolean;
   isHovered?: boolean;
-  isDimmed?: boolean; // when another component is selected
+  isDimmed?: boolean; // when another component is selected (dimmed to ~40%)
   isEmissiveBlink?: boolean;
 }
 
@@ -42,6 +42,8 @@ const PRESET_CONFIGS: Record<
     color: '#e2e8f0',
     roughness: 0.1,
     metalness: 0.95,
+    clearcoat: 0.55,
+    clearcoatRoughness: 0.12,
   },
   gold: {
     color: '#eab308',
@@ -70,14 +72,15 @@ const PRESET_CONFIGS: Record<
   },
   silicon_die: {
     color: '#334155',
-    roughness: 0.15,
-    metalness: 0.75,
-    clearcoat: 0.8,
+    roughness: 0.3,
+    metalness: 0.35,
   },
   ceramic: {
     color: '#e2e8f0',
-    roughness: 0.85,
+    roughness: 0.22,
     metalness: 0.05,
+    clearcoat: 0.55,
+    clearcoatRoughness: 0.18,
   },
   black_plastic: {
     color: '#18181b',
@@ -121,14 +124,16 @@ const PRESET_CONFIGS: Record<
     transparent: true,
     opacity: 0.7,
     emissive: '#0284c7',
-    emissiveIntensity: 0.25,
+    emissiveIntensity: 0.2,
   },
   led_emissive: {
     color: '#38bdf8',
     roughness: 0.1,
     metalness: 0.1,
     emissive: '#38bdf8',
-    emissiveIntensity: 2.5,
+    emissiveIntensity: 0.35, // Capped at 0.35 per spec (no blown-out glow)
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.12,
   },
 };
 
@@ -137,7 +142,8 @@ export function getPresetColor(preset: MaterialPreset): string {
 }
 
 /**
- * Creates or adjusts a Three.js material based on preset and active interaction states
+ * Creates or adjusts a Three.js material based on preset and active interaction states.
+ * Enforces controlled emissive intensities (max 0.35) and clean dimmed/selected states.
  */
 export function createPartMaterial(preset: MaterialPreset, options: MaterialStyleOptions = {}): THREE.Material {
   const cfg = PRESET_CONFIGS[preset] || PRESET_CONFIGS.aluminum_heatsink;
@@ -145,48 +151,55 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
 
   let baseColor = new THREE.Color(cfg.color);
   let emissiveColor = cfg.emissive ? new THREE.Color(cfg.emissive) : new THREE.Color(0x000000);
-  let emissiveIntensity = cfg.emissiveIntensity || 0;
+  let emissiveIntensity = Math.min(cfg.emissiveIntensity || 0, 0.35);
   let opacity = cfg.opacity ?? 1.0;
   let transparent = cfg.transparent ?? false;
   let wireframe = false;
 
-  // Selected state: bright cyan/blue outline glow
+  // Selected state: clear outline and subtle accent glow (capped <= 0.35)
   if (isSelected) {
-    baseColor = baseColor.clone().lerp(new THREE.Color('#38bdf8'), 0.35);
+    baseColor = baseColor.clone().lerp(new THREE.Color('#38bdf8'), 0.25);
     emissiveColor = new THREE.Color('#0284c7');
-    emissiveIntensity = Math.max(emissiveIntensity, 0.6);
-    opacity = 1.0;
-    transparent = false;
+    emissiveIntensity = 0.35;
+    opacity = cfg.transparent ? Math.max(opacity, 0.85) : 1.0;
+    transparent = Boolean(cfg.transparent);
   } else if (isHovered) {
-    // Hover state: soft sky-blue edge glow
-    baseColor = baseColor.clone().lerp(new THREE.Color('#7dd3fc'), 0.2);
+    // Hover state: soft gentle glow
+    baseColor = baseColor.clone().lerp(new THREE.Color('#93c5fd'), 0.18);
     emissiveColor = new THREE.Color('#0369a1');
-    emissiveIntensity = Math.max(emissiveIntensity, 0.3);
+    emissiveIntensity = 0.2;
   } else if (isDimmed) {
-    // Another component is focused: dim non-selected to ~35% opacity
-    opacity = Math.min(opacity, 0.35);
+    // Other parts dimmed to ~40% opacity/tone
+    baseColor = baseColor.clone().lerp(new THREE.Color('#0f172a'), 0.5);
+    opacity = cfg.transparent ? (cfg.opacity ?? 0.6) * 0.4 : 0.4;
     transparent = true;
+    emissiveIntensity = 0;
   }
 
-  // X-Ray Mode
+  // X-Ray Mode: ghosted fresnel shells, cyan edges, internals visible
   if (viewMode === 'xray') {
     transparent = true;
-    opacity = isSelected ? 0.8 : 0.25;
-    wireframe = !isSelected;
+    opacity = isSelected ? 0.75 : 0.28;
+    wireframe = false;
     if (!isSelected) {
-      baseColor = new THREE.Color('#38bdf8');
-      emissiveColor = new THREE.Color('#0284c7');
-      emissiveIntensity = 0.2;
+      baseColor = new THREE.Color('#06b6d4');
+      emissiveColor = new THREE.Color('#0891b2');
+      emissiveIntensity = 0.12;
     }
   }
 
-  // Emissive blink for mechanisms
+  // Emissive blink for mechanisms (capped at 0.35)
   if (isEmissiveBlink) {
-    emissiveIntensity = 3.0;
+    emissiveIntensity = 0.35;
     emissiveColor = new THREE.Color('#38bdf8');
   }
 
-  const mat = new THREE.MeshStandardMaterial({
+  const MaterialClass =
+    cfg.clearcoat !== undefined || cfg.transmission !== undefined
+      ? THREE.MeshPhysicalMaterial
+      : THREE.MeshStandardMaterial;
+
+  const mat = new MaterialClass({
     color: baseColor,
     roughness: cfg.roughness,
     metalness: cfg.metalness,
@@ -195,6 +208,16 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
     emissive: emissiveColor,
     emissiveIntensity,
     wireframe,
+    depthWrite: !transparent || opacity >= 0.75,
+    ...(MaterialClass === THREE.MeshPhysicalMaterial
+      ? {
+          transmission: cfg.transmission ?? 0,
+          ior: cfg.ior ?? 1.5,
+          clearcoat: cfg.clearcoat ?? 0,
+          clearcoatRoughness: cfg.clearcoatRoughness ?? 0.1,
+          thickness: cfg.transmission ? 0.3 : 0,
+        }
+      : {}),
   });
 
   return mat;

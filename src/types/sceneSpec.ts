@@ -41,6 +41,9 @@ export interface ScenePart {
   rotation?: [number, number, number]; // in radians
   material: MaterialPreset;
   path?: Array<[number, number, number]>; // tube only
+  motionGroup?: string;
+  motionCenter?: boolean;
+  motionDirection?: number;
 }
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
@@ -68,7 +71,7 @@ export interface SceneConnection {
   description: string;
 }
 
-export type MechanismType = 'spin' | 'pulse_flow' | 'oscillate' | 'slide' | 'blink';
+export type MechanismType = 'spin' | 'oscillate' | 'blink';
 
 export interface SceneMechanism {
   id: string;

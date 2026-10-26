@@ -17,12 +17,110 @@
       "name": "Carbon Fiber Unibody Frame",
       "group": "Structure",
       "parts": [
-        { "shape": "box", "size": [0.9, 0.04, 1.4], "position": [0, -0.05, 0], "material": "carbon_fiber" },
-        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [0.8, 0, 0.8], "rotation": [0, -0.785, 0], "material": "carbon_fiber" },
-        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [-0.8, 0, 0.8], "rotation": [0, 0.785, 0], "material": "carbon_fiber" },
-        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [-0.8, 0, -0.8], "rotation": [0, -0.785, 0], "material": "carbon_fiber" },
-        { "shape": "box", "size": [1.8, 0.06, 0.22], "position": [0.8, 0, -0.8], "rotation": [0, 0.785, 0], "material": "carbon_fiber" },
-        { "shape": "box", "size": [0.75, 0.04, 1.3], "position": [0, 0.5, 0], "material": "carbon_fiber" }
+        {
+          "shape": "box",
+          "size": [
+            0.9,
+            0.04,
+            1.4
+          ],
+          "position": [
+            0,
+            -0.05,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            1.8,
+            0.06,
+            0.22
+          ],
+          "position": [
+            0.8,
+            0,
+            0.8
+          ],
+          "rotation": [
+            0,
+            -0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            1.8,
+            0.06,
+            0.22
+          ],
+          "position": [
+            -0.8,
+            0,
+            0.8
+          ],
+          "rotation": [
+            0,
+            0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            1.8,
+            0.06,
+            0.22
+          ],
+          "position": [
+            -0.8,
+            0,
+            -0.8
+          ],
+          "rotation": [
+            0,
+            -0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            1.8,
+            0.06,
+            0.22
+          ],
+          "position": [
+            0.8,
+            0,
+            -0.8
+          ],
+          "rotation": [
+            0,
+            0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.75,
+            0.04,
+            1.3
+          ],
+          "position": [
+            0,
+            0.5,
+            0
+          ],
+          "material": "carbon_fiber"
+        }
       ],
       "summary": "T700 3K weave carbon fiber chassis engineered for torsional rigidity and motor harmonic resonance damping.",
       "howItWorks": "Interlocks 4mm arms with 2mm top and bottom sandwich plates, transferring aerodynamic thrust loads directly to the central battery and electronics mass.",
@@ -33,16 +131,59 @@
         "Resists shock impacts up to 25G"
       ],
       "confidence": "high",
-      "explode": [0, -0.8, 0]
+      "explode": [
+        0,
+        -0.8,
+        0
+      ]
     },
     {
       "id": "esc_4in1",
       "name": "4-in-1 Electronic Speed Controller",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "box", "size": [0.72, 0.04, 0.72], "position": [0, 0.08, 0], "material": "pcb_black" },
-        { "shape": "box", "size": [0.65, 0.03, 0.65], "position": [0, 0.11, 0], "material": "aluminum_heatsink" },
-        { "shape": "box", "size": [0.12, 0.08, 0.08], "position": [-0.3, 0.1, -0.3], "material": "copper" }
+        {
+          "shape": "box",
+          "size": [
+            0.72,
+            0.04,
+            0.72
+          ],
+          "position": [
+            0,
+            0.08,
+            0
+          ],
+          "material": "pcb_black"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.65,
+            0.03,
+            0.65
+          ],
+          "position": [
+            0,
+            0.11,
+            0
+          ],
+          "material": "aluminum_heatsink"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.12,
+            0.08,
+            0.08
+          ],
+          "position": [
+            -0.3,
+            0.1,
+            -0.3
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "High-current power distribution board integrating 4 independent three-phase MOSFET inverter bridges.",
       "howItWorks": "Receives 22.2V-25.2V direct current from the LiPo battery and pulses high-frequency 3-phase AC to each motor using DShot600 digital protocol.",
@@ -53,17 +194,72 @@
         "Bidirectional DShot telemetry feedback"
       ],
       "confidence": "high",
-      "explode": [0, -0.3, 0]
+      "explode": [
+        0,
+        -0.3,
+        0
+      ]
     },
     {
       "id": "flight_controller",
       "name": "Flight Controller (FC)",
       "group": "Logic & Sensors",
       "parts": [
-        { "shape": "box", "size": [0.72, 0.04, 0.72], "position": [0, 0.26, 0], "material": "pcb_black" },
-        { "shape": "box", "size": [0.22, 0.03, 0.22], "position": [0, 0.29, 0], "material": "silicon_die" },
-        { "shape": "box", "size": [0.08, 0.02, 0.08], "position": [0.15, 0.28, 0.12], "material": "ceramic" },
-        { "shape": "cylinder", "size": [0.02, 0.04], "position": [-0.25, 0.28, -0.25], "material": "led_emissive" }
+        {
+          "shape": "box",
+          "size": [
+            0.72,
+            0.04,
+            0.72
+          ],
+          "position": [
+            0,
+            0.26,
+            0
+          ],
+          "material": "pcb_black"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.22,
+            0.03,
+            0.22
+          ],
+          "position": [
+            0,
+            0.29,
+            0
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.08,
+            0.02,
+            0.08
+          ],
+          "position": [
+            0.15,
+            0.28,
+            0.12
+          ],
+          "material": "ceramic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.02,
+            0.04
+          ],
+          "position": [
+            -0.25,
+            0.28,
+            -0.25
+          ],
+          "material": "led_emissive"
+        }
       ],
       "summary": "Central nervous system running real-time Betaflight PID estimation and sensor filtering algorithms at 8 kHz.",
       "howItWorks": "Samples an onboard 6-axis MEMS IMU gyro at 8,000 times per second, compares with pilot RC stick inputs, and recalculates motor outputs.",
@@ -74,16 +270,56 @@
         "Onboard OSD (On-Screen Display) video generator"
       ],
       "confidence": "high",
-      "explode": [0, 0.1, 0]
+      "explode": [
+        0,
+        0.1,
+        0
+      ]
     },
     {
       "id": "motor_fr",
       "name": "Motor Front-Right (2207 1950KV)",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "cylinder", "size": [0.28, 0.22], "position": [1.35, 0.14, 1.35], "material": "polished_metal" },
-        { "shape": "cylinder", "size": [0.05, 0.35], "position": [1.35, 0.28, 1.35], "material": "brushed_metal" },
-        { "shape": "cylinder", "size": [0.24, 0.12], "position": [1.35, 0.12, 1.35], "material": "copper" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.28,
+            0.22
+          ],
+          "position": [
+            1.35,
+            0.14,
+            1.35
+          ],
+          "material": "polished_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.05,
+            0.35
+          ],
+          "position": [
+            1.35,
+            0.28,
+            1.35
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.24,
+            0.12
+          ],
+          "position": [
+            1.35,
+            0.12,
+            1.35
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Brushless outrunner motor delivering over 1.8 kg of static thrust at maximum 6S battery voltage.",
       "howItWorks": "Permanent neodymium N52SH magnets mounted inside the outer bell rotate around stationary copper stator coils switched by the ESC.",
@@ -94,16 +330,56 @@
         "Counter-Clockwise (CCW) standard rotation"
       ],
       "confidence": "high",
-      "explode": [0.8, 0.4, 0.8]
+      "explode": [
+        0.8,
+        0.4,
+        0.8
+      ]
     },
     {
       "id": "motor_fl",
       "name": "Motor Front-Left (2207 1950KV)",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "cylinder", "size": [0.28, 0.22], "position": [-1.35, 0.14, 1.35], "material": "polished_metal" },
-        { "shape": "cylinder", "size": [0.05, 0.35], "position": [-1.35, 0.28, 1.35], "material": "brushed_metal" },
-        { "shape": "cylinder", "size": [0.24, 0.12], "position": [-1.35, 0.12, 1.35], "material": "copper" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.28,
+            0.22
+          ],
+          "position": [
+            -1.35,
+            0.14,
+            1.35
+          ],
+          "material": "polished_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.05,
+            0.35
+          ],
+          "position": [
+            -1.35,
+            0.28,
+            1.35
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.24,
+            0.12
+          ],
+          "position": [
+            -1.35,
+            0.12,
+            1.35
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Front-left brushless outrunner motor rotating Clockwise (CW) to balance angular momentum.",
       "howItWorks": "Generates upward vertical thrust; differential torque relative to adjacent motors creates roll and pitch control moments.",
@@ -114,16 +390,56 @@
         "M5 titanium hollow output shaft"
       ],
       "confidence": "high",
-      "explode": [-0.8, 0.4, 0.8]
+      "explode": [
+        -0.8,
+        0.4,
+        0.8
+      ]
     },
     {
       "id": "motor_rl",
       "name": "Motor Rear-Left (2207 1950KV)",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "cylinder", "size": [0.28, 0.22], "position": [-1.35, 0.14, -1.35], "material": "polished_metal" },
-        { "shape": "cylinder", "size": [0.05, 0.35], "position": [-1.35, 0.28, -1.35], "material": "brushed_metal" },
-        { "shape": "cylinder", "size": [0.24, 0.12], "position": [-1.35, 0.12, -1.35], "material": "copper" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.28,
+            0.22
+          ],
+          "position": [
+            -1.35,
+            0.14,
+            -1.35
+          ],
+          "material": "polished_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.05,
+            0.35
+          ],
+          "position": [
+            -1.35,
+            0.28,
+            -1.35
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.24,
+            0.12
+          ],
+          "position": [
+            -1.35,
+            0.12,
+            -1.35
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Rear-left brushless outrunner motor rotating Counter-Clockwise (CCW).",
       "howItWorks": "Produces thrust and aerodynamic torque in coordination with diagonal Front-Right motor.",
@@ -134,16 +450,56 @@
         "High-temperature 220°C copper wire"
       ],
       "confidence": "high",
-      "explode": [-0.8, 0.4, -0.8]
+      "explode": [
+        -0.8,
+        0.4,
+        -0.8
+      ]
     },
     {
       "id": "motor_rr",
       "name": "Motor Rear-Right (2207 1950KV)",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "cylinder", "size": [0.28, 0.22], "position": [1.35, 0.14, -1.35], "material": "polished_metal" },
-        { "shape": "cylinder", "size": [0.05, 0.35], "position": [1.35, 0.28, -1.35], "material": "brushed_metal" },
-        { "shape": "cylinder", "size": [0.24, 0.12], "position": [1.35, 0.12, -1.35], "material": "copper" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.28,
+            0.22
+          ],
+          "position": [
+            1.35,
+            0.14,
+            -1.35
+          ],
+          "material": "polished_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.05,
+            0.35
+          ],
+          "position": [
+            1.35,
+            0.28,
+            -1.35
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.24,
+            0.12
+          ],
+          "position": [
+            1.35,
+            0.12,
+            -1.35
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Rear-right brushless outrunner motor rotating Clockwise (CW).",
       "howItWorks": "Pairs with front-left motor to control clockwise yaw and rear pitch elevation.",
@@ -154,17 +510,333 @@
         "0.15mm air gap between rotor and stator"
       ],
       "confidence": "high",
-      "explode": [0.8, 0.4, -0.8]
+      "explode": [
+        0.8,
+        0.4,
+        -0.8
+      ]
     },
     {
       "id": "propellers",
       "name": "5.1-Inch Tri-Blade Propeller Set",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "cylinder", "size": [0.85, 0.03], "position": [1.35, 0.38, 1.35], "material": "translucent_blue" },
-        { "shape": "cylinder", "size": [0.85, 0.03], "position": [-1.35, 0.38, 1.35], "material": "translucent_blue" },
-        { "shape": "cylinder", "size": [0.85, 0.03], "position": [-1.35, 0.38, -1.35], "material": "translucent_blue" },
-        { "shape": "cylinder", "size": [0.85, 0.03], "position": [1.35, 0.38, -1.35], "material": "translucent_blue" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.09,
+            0.12
+          ],
+          "position": [
+            1.35,
+            0.38,
+            1.35
+          ],
+          "material": "polished_metal",
+          "motionGroup": "motor_fr",
+          "motionCenter": true,
+          "motionDirection": 1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            1.6400000000000001,
+            0.38,
+            1.35
+          ],
+          "rotation": [
+            0,
+            -0.0,
+            0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_fr",
+          "motionDirection": 1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            1.205,
+            0.41897114317029976,
+            1.6011473670974872
+          ],
+          "rotation": [
+            0,
+            -2.0943951023931953,
+            0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_fr",
+          "motionDirection": 1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            1.205,
+            0.3410288568297003,
+            1.098852632902513
+          ],
+          "rotation": [
+            0,
+            -4.1887902047863905,
+            0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_fr",
+          "motionDirection": 1
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.09,
+            0.12
+          ],
+          "position": [
+            -1.35,
+            0.38,
+            1.35
+          ],
+          "material": "polished_metal",
+          "motionGroup": "motor_fl",
+          "motionCenter": true,
+          "motionDirection": -1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            -1.06,
+            0.38,
+            1.35
+          ],
+          "rotation": [
+            0,
+            -0.0,
+            -0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_fl",
+          "motionDirection": -1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            -1.495,
+            0.41897114317029976,
+            1.6011473670974872
+          ],
+          "rotation": [
+            0,
+            -2.0943951023931953,
+            -0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_fl",
+          "motionDirection": -1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            -1.495,
+            0.3410288568297003,
+            1.098852632902513
+          ],
+          "rotation": [
+            0,
+            -4.1887902047863905,
+            -0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_fl",
+          "motionDirection": -1
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.09,
+            0.12
+          ],
+          "position": [
+            -1.35,
+            0.38,
+            -1.35
+          ],
+          "material": "polished_metal",
+          "motionGroup": "motor_rl",
+          "motionCenter": true,
+          "motionDirection": -1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            -1.06,
+            0.38,
+            -1.35
+          ],
+          "rotation": [
+            0,
+            -0.0,
+            -0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_rl",
+          "motionDirection": -1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            -1.495,
+            0.41897114317029976,
+            -1.098852632902513
+          ],
+          "rotation": [
+            0,
+            -2.0943951023931953,
+            -0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_rl",
+          "motionDirection": -1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            -1.495,
+            0.3410288568297003,
+            -1.6011473670974872
+          ],
+          "rotation": [
+            0,
+            -4.1887902047863905,
+            -0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_rl",
+          "motionDirection": -1
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.09,
+            0.12
+          ],
+          "position": [
+            1.35,
+            0.38,
+            -1.35
+          ],
+          "material": "polished_metal",
+          "motionGroup": "motor_rr",
+          "motionCenter": true,
+          "motionDirection": 1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            1.6400000000000001,
+            0.38,
+            -1.35
+          ],
+          "rotation": [
+            0,
+            -0.0,
+            0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_rr",
+          "motionDirection": 1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            1.205,
+            0.41897114317029976,
+            -1.098852632902513
+          ],
+          "rotation": [
+            0,
+            -2.0943951023931953,
+            0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_rr",
+          "motionDirection": 1
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.52,
+            0.035,
+            0.13
+          ],
+          "position": [
+            1.205,
+            0.3410288568297003,
+            -1.6011473670974872
+          ],
+          "rotation": [
+            0,
+            -4.1887902047863905,
+            0.08
+          ],
+          "material": "black_plastic",
+          "motionGroup": "motor_rr",
+          "motionDirection": 1
+        }
       ],
       "summary": "Polycarbonate aerodynamic airfoil blades producing lift and thrust through high-speed air acceleration.",
       "howItWorks": "Accelerates incoming air column downward via cambered aerodynamic airfoil sections with aggressive pitch distribution.",
@@ -175,16 +847,63 @@
         "Total static thrust ratio: > 12:1 thrust-to-weight"
       ],
       "confidence": "high",
-      "explode": [0, 0.6, 0]
+      "explode": [
+        0,
+        0.6,
+        0
+      ]
     },
     {
       "id": "fpv_camera",
       "name": "Micro FPV Camera",
       "group": "Vision & Avionics",
       "parts": [
-        { "shape": "box", "size": [0.38, 0.38, 0.34], "position": [0, 0.32, 0.95], "material": "black_plastic" },
-        { "shape": "cylinder", "size": [0.12, 0.16], "position": [0, 0.32, 1.15], "rotation": [1.57, 0, 0], "material": "glass" },
-        { "shape": "box", "size": [0.42, 0.04, 0.04], "position": [0, 0.22, 0.95], "material": "aluminum_heatsink" }
+        {
+          "shape": "box",
+          "size": [
+            0.38,
+            0.38,
+            0.34
+          ],
+          "position": [
+            0,
+            0.32,
+            -0.95
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.12,
+            0.16
+          ],
+          "position": [
+            0,
+            0.32,
+            -1.15
+          ],
+          "rotation": [
+            -1.5707963267948966,
+            0,
+            0
+          ],
+          "material": "glass"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.04,
+            0.04
+          ],
+          "position": [
+            0,
+            0.22,
+            -0.95
+          ],
+          "material": "aluminum_heatsink"
+        }
       ],
       "summary": "Low-latency CMOS camera mounted at a 35° uptilt angle to stream pilot point-of-view imagery.",
       "howItWorks": "Captures raw optical photons onto a 1/1.8-inch Starlight CMOS sensor, outputting low-latency analog NTSC/PAL composite video signal.",
@@ -195,16 +914,61 @@
         "Global WDR (Wide Dynamic Range) day/night sensor"
       ],
       "confidence": "high",
-      "explode": [0, 0.2, 0.6]
+      "explode": [
+        0,
+        0.2,
+        0.6
+      ]
     },
     {
       "id": "vtx_unit",
       "name": "5.8GHz Video Transmitter (VTX)",
       "group": "Vision & Avionics",
       "parts": [
-        { "shape": "box", "size": [0.6, 0.12, 0.6], "position": [0, 0.42, -0.3], "material": "aluminum_heatsink" },
-        { "shape": "cylinder", "size": [0.03, 0.45], "position": [0, 0.7, -0.6], "rotation": [-0.5, 0, 0], "material": "rubber" },
-        { "shape": "sphere", "size": [0.08], "position": [0, 0.9, -0.72], "material": "black_plastic" }
+        {
+          "shape": "box",
+          "size": [
+            0.6,
+            0.12,
+            0.6
+          ],
+          "position": [
+            0,
+            0.42,
+            -0.3
+          ],
+          "material": "aluminum_heatsink"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.45
+          ],
+          "position": [
+            0,
+            0.7,
+            -0.6
+          ],
+          "rotation": [
+            -0.5,
+            0,
+            0
+          ],
+          "material": "rubber"
+        },
+        {
+          "shape": "sphere",
+          "size": [
+            0.08
+          ],
+          "position": [
+            0,
+            0.9,
+            -0.72
+          ],
+          "material": "black_plastic"
+        }
       ],
       "summary": "Microwave RF transmitter broadcasting live analog FPV video down to pilot goggles at 5.8 GHz.",
       "howItWorks": "Modulates composite video signal onto 5.8 GHz FM carrier frequency with selectable RF transmission power (25mW to 800mW).",
@@ -215,16 +979,67 @@
         "SmartAudio protocol for channel changes via OSD"
       ],
       "confidence": "high",
-      "explode": [0, 0.4, -0.4]
+      "explode": [
+        0,
+        0.4,
+        -0.4
+      ]
     },
     {
       "id": "lipo_battery",
       "name": "6S LiPo Battery (1300mAh 120C)",
       "group": "Power & Propulsion",
       "parts": [
-        { "shape": "box", "size": [0.75, 0.55, 1.4], "position": [0, 0.85, 0], "material": "white_plastic" },
-        { "shape": "cylinder", "size": [0.04, 0.2], "position": [0.15, 0.85, -0.75], "rotation": [1.57, 0, 0], "material": "gold" },
-        { "shape": "cylinder", "size": [0.04, 0.2], "position": [-0.15, 0.85, -0.75], "rotation": [1.57, 0, 0], "material": "rubber" }
+        {
+          "shape": "box",
+          "size": [
+            0.75,
+            0.55,
+            1.4
+          ],
+          "position": [
+            0,
+            0.85,
+            0
+          ],
+          "material": "white_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.04,
+            0.2
+          ],
+          "position": [
+            0.15,
+            0.85,
+            -0.75
+          ],
+          "rotation": [
+            1.57,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.04,
+            0.2
+          ],
+          "position": [
+            -0.15,
+            0.85,
+            -0.75
+          ],
+          "rotation": [
+            1.57,
+            0,
+            0
+          ],
+          "material": "rubber"
+        }
       ],
       "summary": "High-discharge Lithium Polymer power reservoir mounted on the top carbon plate with rubberized strap.",
       "howItWorks": "Houses 6 series-connected lithium cobalt oxide electrochemical pouch cells providing nominal 22.2V (25.2V fully charged).",
@@ -235,15 +1050,60 @@
         "120C continuous discharge rating (156A continuous)"
       ],
       "confidence": "high",
-      "explode": [0, 0.8, 0]
+      "explode": [
+        0,
+        0.8,
+        0
+      ]
     },
     {
       "id": "elrs_receiver",
       "name": "ExpressLRS 2.4GHz RC Receiver",
       "group": "Logic & Sensors",
       "parts": [
-        { "shape": "box", "size": [0.24, 0.04, 0.28], "position": [0, 0.38, 0.3], "material": "pcb_black" },
-        { "shape": "tube", "size": [0.015], "position": [0, 0.4, 0.3], "material": "rubber", "path": [[0, 0.4, 0.3], [0.3, 0.5, 0.3], [0.6, 0.55, 0.3]] }
+        {
+          "shape": "box",
+          "size": [
+            0.24,
+            0.04,
+            0.28
+          ],
+          "position": [
+            0,
+            0.38,
+            0.3
+          ],
+          "material": "pcb_black"
+        },
+        {
+          "shape": "tube",
+          "size": [
+            0.015
+          ],
+          "position": [
+            0,
+            0.4,
+            0.3
+          ],
+          "material": "rubber",
+          "path": [
+            [
+              0,
+              0.4,
+              0.3
+            ],
+            [
+              0.3,
+              0.5,
+              0.3
+            ],
+            [
+              0.6,
+              0.55,
+              0.3
+            ]
+          ]
+        }
       ],
       "summary": "Ultra-low-latency open-source radio control link operating at up to 500 Hz packet rate.",
       "howItWorks": "Receives LoRa frequency-hopping RF packets from pilot handheld radio, parsing channel stick positions and sending CRSF UART packets to FC.",
@@ -254,7 +1114,11 @@
         "True diversity antenna switching"
       ],
       "confidence": "high",
-      "explode": [0, 0.3, 0.3]
+      "explode": [
+        0,
+        0.3,
+        0.3
+      ]
     }
   ],
   "connections": [
@@ -341,8 +1205,14 @@
       "id": "prop_spin",
       "name": "Propeller Aerodynamic Rotation",
       "type": "spin",
-      "targets": ["propellers", "motor_fr", "motor_fl", "motor_rl", "motor_rr"],
-      "axis": [0, 1, 0],
+      "targets": [
+        "propellers"
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
       "speed": 2.5,
       "direction": 1,
       "explanation": "High-speed rotation creates aerodynamic pressure differential across propeller blade surfaces, yielding upward thrust."
@@ -351,48 +1221,60 @@
       "id": "fc_led_blink",
       "name": "Arming Status Telemetry LED",
       "type": "blink",
-      "targets": ["flight_controller"],
+      "targets": [
+        "flight_controller"
+      ],
       "speed": 1.2,
       "explanation": "Blinks blue when acquiring gyro zero calibration; illuminates solid when armed and ready for flight."
-    },
-    {
-      "id": "power_pulse",
-      "name": "6S High-Current Discharge Flow",
-      "type": "pulse_flow",
-      "targets": ["lipo_battery", "esc_4in1"],
-      "speed": 1.0,
-      "explanation": "Visualizes high-discharge current flow from chemical cells through MOSFET switching arrays."
     }
   ],
   "assemblySteps": [
     {
       "order": 1,
-      "componentIds": ["carbon_frame"],
+      "componentIds": [
+        "carbon_frame"
+      ],
       "instruction": "Assemble carbon unibody frame, tightening titanium M3 arm hardware to 1.8 N·m."
     },
     {
       "order": 2,
-      "componentIds": ["esc_4in1"],
+      "componentIds": [
+        "esc_4in1"
+      ],
       "instruction": "Mount 4-in-1 ESC on rubber isolation grommets in bottom center bay and solder XT60 power pigtail."
     },
     {
       "order": 3,
-      "componentIds": ["motor_fr", "motor_fl", "motor_rl", "motor_rr"],
+      "componentIds": [
+        "motor_fr",
+        "motor_fl",
+        "motor_rl",
+        "motor_rr"
+      ],
       "instruction": "Bolt 2207 brushless motors to arm tips using loctite and solder 3-phase wire leads to ESC pads."
     },
     {
       "order": 4,
-      "componentIds": ["flight_controller", "elrs_receiver"],
+      "componentIds": [
+        "flight_controller",
+        "elrs_receiver"
+      ],
       "instruction": "Stack Flight Controller above ESC with vibration dampeners; connect 8-pin harness and wire ELRS receiver to UART1."
     },
     {
       "order": 5,
-      "componentIds": ["fpv_camera", "vtx_unit"],
+      "componentIds": [
+        "fpv_camera",
+        "vtx_unit"
+      ],
       "instruction": "Install FPV camera between TPU front brackets and mount VTX in rear with antenna protruding 45° aft."
     },
     {
       "order": 6,
-      "componentIds": ["lipo_battery", "propellers"],
+      "componentIds": [
+        "lipo_battery",
+        "propellers"
+      ],
       "instruction": "Strap 6S battery to top plate with silicone-coated kevlar strap and tighten self-locking M5 nylon nuts on propellers."
     }
   ],
@@ -401,7 +1283,10 @@
       "id": "exp_remove_prop",
       "title": "Loss of Front-Right Propeller",
       "action": "remove",
-      "targets": ["propellers", "motor_fr"],
+      "targets": [
+        "propellers",
+        "motor_fr"
+      ],
       "consequence": "Uncontrollable pitch-roll torque divergence and instant ground rollover.",
       "explanation": "Quadcopter flight requires balanced thrust vectors across all four corners. Loss of one rotor removes 25% lift and breaks pitch/roll equilibrium, causing the PID loop to saturate and the craft to tumble within 80ms."
     },
@@ -409,7 +1294,9 @@
       "id": "exp_esc_overload",
       "title": "ESC Thermal Overload (FET Desync)",
       "action": "overload",
-      "targets": ["esc_4in1"],
+      "targets": [
+        "esc_4in1"
+      ],
       "consequence": "MOSFET junction temperature exceeds 125°C, causing commutation timing desync and motor stall.",
       "explanation": "Continuous full-throttle flight without adequate airflow overheats the low-side N-channel MOSFETs. The gate driver loses back-EMF zero-crossing detection, triggering hardware thermal shutdown."
     },
@@ -417,7 +1304,9 @@
       "id": "exp_reverse_motor",
       "title": "Reverse Rear-Left Motor Direction",
       "action": "reverse",
-      "targets": ["motor_rl"],
+      "targets": [
+        "motor_rl"
+      ],
       "consequence": "Severe yaw spin-out and loss of rotational heading hold.",
       "explanation": "Standard quadcopters counter-balance aerodynamic torque with 2 CW and 2 CCW motors. Reversing one motor makes three rotors spin clockwise and only one counter-clockwise, producing an inescapable 3:1 net yaw torque."
     }

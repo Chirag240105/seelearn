@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { ScenePart } from '../../types/sceneSpec';
 import { createPartMaterial, MaterialStyleOptions } from './materialFactory';
 
@@ -24,12 +25,17 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
   const geometry = useMemo(() => {
     try {
       switch (shape) {
-        case 'box':
-        case 'roundedBox': {
+        case 'box': {
           const w = size[0] ?? 1;
           const h = size[1] ?? 1;
           const d = size[2] ?? 1;
           return new THREE.BoxGeometry(w, h, d);
+        }
+        case 'roundedBox': {
+          const w = size[0] ?? 1;
+          const h = size[1] ?? 0.5;
+          const d = size[2] ?? 1;
+          return new RoundedBoxGeometry(w, h, d, 4, Math.min(w, h, d) * 0.12);
         }
         case 'cylinder': {
           const r = size[0] ?? 0.5;
@@ -62,7 +68,6 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
             const curve = new THREE.CatmullRomCurve3(points);
             return new THREE.TubeGeometry(curve, 24, r, 8, false);
           }
-          // Fallback if no path
           return new THREE.CylinderGeometry(r, r, 0.5, 16);
         }
         default:
@@ -79,17 +84,44 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
     return createPartMaterial(material, options);
   }, [material, options]);
 
+  const isXray = options.viewMode === 'xray';
+  const edgeColor = options.isSelected
+    ? '#38bdf8'
+    : isXray
+    ? '#06b6d4'
+    : '#1e293b';
+
+  const edgeOpacity = options.isSelected
+    ? 0.88
+    : isXray
+    ? 0.55
+    : options.isHovered
+    ? 0.45
+    : options.isDimmed
+    ? 0.1
+    : 0.22;
+
   return (
     <mesh
       geometry={geometry}
       material={meshMaterial}
       position={position}
       rotation={rotation || [0, 0, 0]}
-      castShadow
-      receiveShadow
+      castShadow={!isXray && !options.isDimmed}
+      receiveShadow={!isXray}
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
       onClick={onClick}
-    />
+    >
+      <lineSegments>
+        <edgesGeometry args={[geometry, isXray ? 15 : 24]} />
+        <lineBasicMaterial
+          color={edgeColor}
+          transparent
+          opacity={edgeOpacity}
+          depthWrite={false}
+        />
+      </lineSegments>
+    </mesh>
   );
 };

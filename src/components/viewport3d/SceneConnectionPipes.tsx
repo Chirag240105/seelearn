@@ -16,7 +16,7 @@ export const CONNECTION_COLORS: Record<ConnectionType, string> = {
   signal: '#06B6D4',     // Cyan
   data: '#8B5CF6',       // Violet
   mechanical: '#93C5FD', // Light sky/white-blue
-  thermal: '#EF4444',    // Orange-red
+  thermal: '#F0441E',    // Orange-red
 };
 
 export const SceneConnectionPipes: React.FC<SceneConnectionPipesProps> = ({
@@ -65,12 +65,13 @@ export const SceneConnectionPipes: React.FC<SceneConnectionPipesProps> = ({
   // Filter connections
   const visibleConnections = useMemo(() => {
     return connections.filter((conn) => {
+      if (!selectedComponentId || (conn.from !== selectedComponentId && conn.to !== selectedComponentId)) return false;
       if (activeFilter !== 'all' && conn.type !== activeFilter) {
         return false;
       }
       return true;
     });
-  }, [connections, activeFilter]);
+  }, [connections, activeFilter, selectedComponentId]);
 
   return (
     <group name="scene-connections">
@@ -107,14 +108,20 @@ interface SingleConnectionPipeProps {
   color: string;
 }
 
+const ConnectionFlowMarker: React.FC<{ curve: THREE.CatmullRomCurve3; offset: number; size: number }> = ({ curve, offset, size }) => {
+  const marker = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (marker.current) marker.current.position.copy(curve.getPoint((state.clock.elapsedTime * 0.22 + offset) % 1));
+  });
+  return <mesh ref={marker}><sphereGeometry args={[size, 10, 10]} /><meshBasicMaterial color="#FFFFFF" /></mesh>;
+};
+
 const SingleConnectionPipe: React.FC<SingleConnectionPipeProps> = ({
   from,
   to,
   isHighlighted,
   color,
 }) => {
-  const pulseRef = useRef<THREE.Mesh>(null);
-
   // Generate an elevated curved trajectory
   const { curve, geometry } = useMemo(() => {
     const dist = from.distanceTo(to);
@@ -127,15 +134,6 @@ const SingleConnectionPipe: React.FC<SingleConnectionPipeProps> = ({
     return { curve: spline, geometry: geo };
   }, [from, to, isHighlighted]);
 
-  // Animate pulse traveling down the pipe
-  useFrame((state) => {
-    if (pulseRef.current) {
-      const t = (state.clock.elapsedTime * 0.7) % 1;
-      const point = curve.getPoint(t);
-      pulseRef.current.position.copy(point);
-    }
-  });
-
   return (
     <group>
       {/* Main tube */}
@@ -143,18 +141,15 @@ const SingleConnectionPipe: React.FC<SingleConnectionPipeProps> = ({
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={isHighlighted ? 0.8 : 0.3}
+          emissiveIntensity={isHighlighted ? 1.4 : 0.25}
           transparent
           opacity={isHighlighted ? 0.9 : 0.6}
           roughness={0.2}
         />
       </mesh>
 
-      {/* Pulsing energy packet indicator */}
-      <mesh ref={pulseRef}>
-        <sphereGeometry args={[isHighlighted ? 0.07 : 0.045, 12, 12]} />
-        <meshBasicMaterial color="#FFFFFF" />
-      </mesh>
+      {/* Flow markers read as moving dashes along the connection. */}
+      {[0, 1, 2, 3].map((index) => <ConnectionFlowMarker key={index} curve={curve} offset={index / 4} size={isHighlighted ? 0.045 : 0.03} />)}
     </group>
   );
 };

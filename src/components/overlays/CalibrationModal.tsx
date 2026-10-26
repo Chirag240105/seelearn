@@ -1,29 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Target, CheckCircle2, RefreshCw, X } from 'lucide-react';
+import { Target, RefreshCw, X } from 'lucide-react';
 
 interface CalibrationModalProps {
   isOpen: boolean;
   isConnected: boolean;
+  isHandDetected: boolean;
   onClose: () => void;
   onCalibrationComplete: (samples: [number, number][]) => boolean;
   currentCursor: { x: number; y: number } | null;
+  calibrationStatus: 'pending' | 'success' | 'failure' | null;
 }
 
 export const CalibrationModal: React.FC<CalibrationModalProps> = ({
   isOpen,
   isConnected,
+  isHandDetected,
   onClose,
   onCalibrationComplete,
   currentCursor,
+  calibrationStatus,
 }) => {
   const [currentCornerIndex, setCurrentCornerIndex] = useState(0);
   const [samples, setSamples] = useState<[number, number][]>([]);
   const [holdProgress, setHoldProgress] = useState(0);
-  const [result, setResult] = useState<'success' | 'failure' | null>(null);
+  const [result, setResult] = useState<'pending' | 'failure' | null>(null);
   const samplesRef = useRef<[number, number][]>([]);
   const currentCursorRef = useRef(currentCursor);
+  const handDetectedRef = useRef(isHandDetected);
   const cornerSampleCountRef = useRef(0);
   currentCursorRef.current = currentCursor;
+  handDetectedRef.current = isHandDetected;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const corners = [
     { label: 'Top-Left Corner', x: 0.15, y: 0.15 },
@@ -49,7 +64,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({
 
     const interval = setInterval(() => {
       const cursor = currentCursorRef.current;
-      if (!cursor) return;
+      if (!cursor || !handDetectedRef.current) return;
 
       const nextSamples = [...samplesRef.current, [cursor.x, cursor.y] as [number, number]];
       samplesRef.current = nextSamples;
@@ -66,7 +81,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({
         return;
       }
 
-      setResult(onCalibrationComplete(nextSamples) ? 'success' : 'failure');
+      setResult(onCalibrationComplete(nextSamples) ? 'pending' : 'failure');
       clearInterval(interval);
     }, 400);
 
@@ -118,7 +133,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({
       </div>
 
       {/* Center Instruction Box */}
-      <div className="max-w-md w-full bg-[#0F172A] border border-slate-800 rounded-2xl p-6 shadow-2xl text-center z-10">
+      <div className="max-w-md w-full bg-slate-900/85 backdrop-blur-2xl border border-white/10 rounded-[14px] p-6 shadow-2xl text-center z-10">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-400 font-mono">
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -139,16 +154,18 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({
         <p className="text-xs text-slate-400 mb-6 leading-relaxed">
           Move your hand to comfortable maximum reach at each target. Collect 3 samples at each corner.
         </p>
-        {result && (
-          <p className={`mb-4 text-xs ${result === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {result === 'success'
-              ? `Calibration sent successfully (${samples.length} samples).`
-              : 'Calibration failed: connect the vision service and try again.'}
+        {(result || calibrationStatus) && (
+          <p className={`mb-4 text-xs ${(calibrationStatus === 'success' || (!calibrationStatus && result === 'pending')) ? 'text-emerald-400' : (calibrationStatus === 'pending' || result === 'pending') ? 'text-sky-300' : 'text-rose-400'}`}>
+            {calibrationStatus === 'success'
+              ? `Calibration confirmed (${samples.length} samples).`
+              : calibrationStatus === 'failure' || result === 'failure'
+              ? 'Calibration failed. Keep your hand visible and try again.'
+              : 'Calibration sent. Waiting for server confirmation…'}
           </p>
         )}
-        {!result && (
+        {!result && !calibrationStatus && (
           <p className="mb-4 text-xs text-slate-500">
-            Samples collected: {samples.length} / 12
+            {isHandDetected ? `Samples collected: ${samples.length} / 12` : 'Show your hand to collect samples.'}
           </p>
         )}
 

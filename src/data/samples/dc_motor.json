@@ -17,9 +17,55 @@
       "name": "Steel Stator Housing & Flux Ring",
       "group": "Stator & Enclosure",
       "parts": [
-        { "shape": "cylinder", "size": [1.4, 2.4], "position": [0, 0, 0], "material": "brushed_metal" },
-        { "shape": "ring", "size": [1.1, 1.4], "position": [0, 1.2, 0], "material": "polished_metal" },
-        { "shape": "ring", "size": [1.1, 1.4], "position": [0, -1.2, 0], "material": "polished_metal" }
+        {
+          "shape": "cylinder",
+          "size": [
+            1.4,
+            2.4
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "ring",
+          "size": [
+            1.1,
+            1.4
+          ],
+          "position": [
+            0,
+            1.2,
+            0
+          ],
+          "material": "polished_metal",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        },
+        {
+          "shape": "ring",
+          "size": [
+            1.1,
+            1.4
+          ],
+          "position": [
+            0,
+            -1.2,
+            0
+          ],
+          "material": "polished_metal",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        }
       ],
       "summary": "Ferromagnetic low-carbon steel cylindrical can serving as structural chassis and external magnetic flux return path.",
       "howItWorks": "Completes the magnetic circuit between the North and South permanent field magnets, shielding stray EMI and preventing flux leakage.",
@@ -30,15 +76,45 @@
         "Zinc-plated for corrosion resistance"
       ],
       "confidence": "high",
-      "explode": [0, 0, 1.6]
+      "explode": [
+        0,
+        0,
+        1.6
+      ]
     },
     {
       "id": "magnets_ns",
       "name": "Permanent Field Magnets (N-S Pair)",
       "group": "Stator & Enclosure",
       "parts": [
-        { "shape": "cylinder", "size": [1.18, 1.8], "position": [0.65, 0, 0], "material": "ceramic" },
-        { "shape": "cylinder", "size": [1.18, 1.8], "position": [-0.65, 0, 0], "material": "ceramic" }
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.25,
+            1.8,
+            0.45
+          ],
+          "position": [
+            1.08,
+            0,
+            0
+          ],
+          "material": "ceramic"
+        },
+        {
+          "shape": "roundedBox",
+          "size": [
+            0.25,
+            1.8,
+            0.45
+          ],
+          "position": [
+            -1.08,
+            0,
+            0
+          ],
+          "material": "ceramic"
+        }
       ],
       "summary": "Dual curved ceramic ferrite permanent magnets providing stationary radial magnetic flux lines across the armature core.",
       "howItWorks": "Creates a continuous magnetic field (B-field) directed perpendicular to the rotating armature copper wires.",
@@ -49,16 +125,58 @@
         "Operating temperature tolerance up to 250°C"
       ],
       "confidence": "high",
-      "explode": [1.2, 0, 0]
+      "explode": [
+        1.2,
+        0,
+        0
+      ]
     },
     {
       "id": "rotor_core",
       "name": "Laminated Armature Rotor Core",
       "group": "Rotor Assembly",
       "parts": [
-        { "shape": "cylinder", "size": [1.05, 1.6], "position": [0, 0, 0], "material": "silicon_die" },
-        { "shape": "box", "size": [0.2, 1.55, 0.4], "position": [0.5, 0, 0], "material": "silicon_die" },
-        { "shape": "box", "size": [0.2, 1.55, 0.4], "position": [-0.5, 0, 0], "material": "silicon_die" }
+        {
+          "shape": "cylinder",
+          "size": [
+            1.05,
+            1.6
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.2,
+            1.55,
+            0.4
+          ],
+          "position": [
+            0.5,
+            0,
+            0
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.2,
+            1.55,
+            0.4
+          ],
+          "position": [
+            -0.5,
+            0,
+            0
+          ],
+          "material": "silicon_die"
+        }
       ],
       "summary": "Stack of insulated thin electrical steel laminations slotted to hold the copper armature windings.",
       "howItWorks": "Concentrates magnetic flux lines through the coils while minimizing parasitic eddy current induction losses.",
@@ -69,16 +187,66 @@
         "Epoxy powder-coated insulation slots"
       ],
       "confidence": "high",
-      "explode": [0, 0, 0]
+      "explode": [
+        0,
+        0,
+        0
+      ]
     },
     {
       "id": "copper_windings",
       "name": "Copper Armature Coil Windings",
       "group": "Rotor Assembly",
       "parts": [
-        { "shape": "cylinder", "size": [0.95, 1.5], "position": [0, 0, 0], "material": "copper" },
-        { "shape": "torus", "size": [0.65, 0.12], "position": [0, 0.85, 0], "material": "copper" },
-        { "shape": "torus", "size": [0.65, 0.12], "position": [0, -0.85, 0], "material": "copper" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.95,
+            1.5
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": "copper"
+        },
+        {
+          "shape": "torus",
+          "size": [
+            0.65,
+            0.12
+          ],
+          "position": [
+            0,
+            0.85,
+            0
+          ],
+          "material": "copper",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        },
+        {
+          "shape": "torus",
+          "size": [
+            0.65,
+            0.12
+          ],
+          "position": [
+            0,
+            -0.85,
+            0
+          ],
+          "material": "copper",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        }
       ],
       "summary": "Heavy-gauge enameled magnet wire wound into 3 separate armature coils connected to the commutator segments.",
       "howItWorks": "Carries DC electrical current through the magnetic field, producing rotational tangential torque on the shaft.",
@@ -89,15 +257,48 @@
         "Dynamic precision balanced with epoxy balancing putty"
       ],
       "confidence": "high",
-      "explode": [0, 0, -0.8]
+      "explode": [
+        0,
+        0,
+        -0.8
+      ]
     },
     {
       "id": "commutator",
       "name": "3-Segment Copper Commutator",
       "group": "Commutation",
       "parts": [
-        { "shape": "cylinder", "size": [0.45, 0.5], "position": [0, 1.3, 0], "material": "copper" },
-        { "shape": "ring", "size": [0.25, 0.44], "position": [0, 1.3, 0], "material": "gold" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.45,
+            0.5
+          ],
+          "position": [
+            0,
+            1.3,
+            0
+          ],
+          "material": "copper"
+        },
+        {
+          "shape": "ring",
+          "size": [
+            0.25,
+            0.44
+          ],
+          "position": [
+            0,
+            1.3,
+            0
+          ],
+          "material": "gold",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        }
       ],
       "summary": "Cylindrical copper contact ring split into three electrically isolated segments by thin mica dielectric sheets.",
       "howItWorks": "Rotates with the shaft to mechanically reverse current direction in each coil as it crosses the magnetic neutral plane.",
@@ -108,17 +309,81 @@
         "Diamond-turned surface finish for brush longevity"
       ],
       "confidence": "high",
-      "explode": [0, 0.6, 0]
+      "explode": [
+        0,
+        0.6,
+        0
+      ]
     },
     {
       "id": "carbon_brushes",
       "name": "Carbon Brushes & Torsion Springs",
       "group": "Commutation",
       "parts": [
-        { "shape": "box", "size": [0.25, 0.22, 0.35], "position": [0.6, 1.3, 0], "material": "black_plastic" },
-        { "shape": "box", "size": [0.25, 0.22, 0.35], "position": [-0.6, 1.3, 0], "material": "black_plastic" },
-        { "shape": "cylinder", "size": [0.03, 0.25], "position": [0.75, 1.3, 0], "rotation": [0, 0, 1.57], "material": "copper" },
-        { "shape": "cylinder", "size": [0.03, 0.25], "position": [-0.75, 1.3, 0], "rotation": [0, 0, 1.57], "material": "copper" }
+        {
+          "shape": "box",
+          "size": [
+            0.25,
+            0.22,
+            0.35
+          ],
+          "position": [
+            0.6,
+            1.3,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.25,
+            0.22,
+            0.35
+          ],
+          "position": [
+            -0.6,
+            1.3,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.25
+          ],
+          "position": [
+            0.75,
+            1.3,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            1.57
+          ],
+          "material": "copper"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.25
+          ],
+          "position": [
+            -0.75,
+            1.3,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            1.57
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Conductive spring-loaded graphite contact blocks sliding against the spinning commutator surface.",
       "howItWorks": "Transfers external DC electrical power from stationary terminals into the rapidly spinning armature coils.",
@@ -129,15 +394,44 @@
         "Flexible stranded copper shunt pigtails"
       ],
       "confidence": "high",
-      "explode": [1.0, 0.6, 0]
+      "explode": [
+        1.0,
+        0.6,
+        0
+      ]
     },
     {
       "id": "motor_shaft",
       "name": "Hardened Steel Drive Shaft",
       "group": "Mechanical Output",
       "parts": [
-        { "shape": "cylinder", "size": [0.15, 3.8], "position": [0, 0, 0], "material": "polished_metal" },
-        { "shape": "box", "size": [0.08, 0.6, 0.08], "position": [0, 1.7, 0.08], "material": "polished_metal" }
+        {
+          "shape": "cylinder",
+          "size": [
+            0.15,
+            3.8
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": "polished_metal"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.08,
+            0.6,
+            0.08
+          ],
+          "position": [
+            0,
+            1.7,
+            0.08
+          ],
+          "material": "polished_metal"
+        }
       ],
       "summary": "Ground stainless steel center axle transmitting rotor mechanical power to external pinions or gearboxes.",
       "howItWorks": "Locks the armature core, commutator, and cooling fan onto a single precision-balanced rotational axis.",
@@ -148,15 +442,53 @@
         "Machined D-flat for set screw clamping"
       ],
       "confidence": "high",
-      "explode": [0, 1.2, 0]
+      "explode": [
+        0,
+        1.2,
+        0
+      ]
     },
     {
       "id": "ball_bearings",
       "name": "Precision Ball Bearings (Front & Rear)",
       "group": "Mechanical Output",
       "parts": [
-        { "shape": "ring", "size": [0.18, 0.5], "position": [0, 1.25, 0], "material": "polished_metal" },
-        { "shape": "ring", "size": [0.18, 0.5], "position": [0, -1.25, 0], "material": "polished_metal" }
+        {
+          "shape": "ring",
+          "size": [
+            0.18,
+            0.5
+          ],
+          "position": [
+            0,
+            1.25,
+            0
+          ],
+          "material": "polished_metal",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        },
+        {
+          "shape": "ring",
+          "size": [
+            0.18,
+            0.5
+          ],
+          "position": [
+            0,
+            -1.25,
+            0
+          ],
+          "material": "polished_metal",
+          "rotation": [
+            1.5707963267948966,
+            0,
+            0
+          ]
+        }
       ],
       "summary": "Deep-groove shielded radial ball bearings supporting the shaft with minimal rotational friction.",
       "howItWorks": "Houses chrome steel balls between inner and outer raceways lubricated with synthetic high-speed grease.",
@@ -167,16 +499,58 @@
         "Max rated speed: 45,000 RPM"
       ],
       "confidence": "high",
-      "explode": [0, 1.8, 0]
+      "explode": [
+        0,
+        1.8,
+        0
+      ]
     },
     {
       "id": "end_bell",
       "name": "Rear End Bell & Terminals",
       "group": "Stator & Enclosure",
       "parts": [
-        { "shape": "cylinder", "size": [1.38, 0.3], "position": [0, 1.35, 0], "material": "black_plastic" },
-        { "shape": "box", "size": [0.12, 0.3, 0.04], "position": [0.8, 1.45, 0], "material": "copper" },
-        { "shape": "box", "size": [0.12, 0.3, 0.04], "position": [-0.8, 1.45, 0], "material": "copper" }
+        {
+          "shape": "cylinder",
+          "size": [
+            1.38,
+            0.3
+          ],
+          "position": [
+            0,
+            1.35,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.12,
+            0.3,
+            0.04
+          ],
+          "position": [
+            0.8,
+            1.45,
+            0
+          ],
+          "material": "copper"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.12,
+            0.3,
+            0.04
+          ],
+          "position": [
+            -0.8,
+            1.45,
+            0
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Molded heat-resistant nylon cap housing the brush holders, suppression capacitors, and spade power terminals.",
       "howItWorks": "Holds brush alignment relative to the commutator and seals the rear bearing cavity.",
@@ -187,7 +561,11 @@
         "Polarity marked quick-disconnect terminals"
       ],
       "confidence": "high",
-      "explode": [0, 1.0, 0]
+      "explode": [
+        0,
+        1.0,
+        0
+      ]
     }
   ],
   "connections": [
@@ -239,45 +617,63 @@
       "id": "rotor_spin",
       "name": "Armature & Shaft Continuous Rotation",
       "type": "spin",
-      "targets": ["motor_shaft", "rotor_core", "copper_windings", "commutator"],
-      "axis": [0, 1, 0],
+      "targets": [
+        "motor_shaft",
+        "rotor_core",
+        "copper_windings",
+        "commutator"
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
       "speed": 2.0,
       "direction": 1,
       "explanation": "Continuous commutation switches coil polarity just before the magnetic neutral plane, sustaining continuous clockwise rotational torque."
-    },
-    {
-      "id": "flux_flow",
-      "name": "Commutation Current Injection",
-      "type": "pulse_flow",
-      "targets": ["carbon_brushes", "commutator"],
-      "speed": 1.5,
-      "explanation": "Visualizes DC electrical charges passing through the brush-commutator contact junction."
     }
   ],
   "assemblySteps": [
     {
       "order": 1,
-      "componentIds": ["motor_shaft", "rotor_core"],
+      "componentIds": [
+        "motor_shaft",
+        "rotor_core"
+      ],
       "instruction": "Press-fit laminated electrical steel armature core onto the center precision shaft using a hydraulic arbor press."
     },
     {
       "order": 2,
-      "componentIds": ["commutator", "copper_windings"],
+      "componentIds": [
+        "commutator",
+        "copper_windings"
+      ],
       "instruction": "Press copper commutator onto shaft and wind high-temperature copper magnet wire into armature slots; solder coil ends to commutator tangs."
     },
     {
       "order": 3,
-      "componentIds": ["stator_casing", "magnets_ns"],
+      "componentIds": [
+        "stator_casing",
+        "magnets_ns"
+      ],
       "instruction": "Bond curved permanent ferrite magnets inside the steel housing using structural heat-cured epoxy."
     },
     {
       "order": 4,
-      "componentIds": ["ball_bearings", "end_bell", "carbon_brushes"],
+      "componentIds": [
+        "ball_bearings",
+        "end_bell",
+        "carbon_brushes"
+      ],
       "instruction": "Insert ball bearings into front housing and rear end bell; install spring-loaded carbon brushes in brush holders."
     },
     {
       "order": 5,
-      "componentIds": ["rotor_core", "stator_casing", "end_bell"],
+      "componentIds": [
+        "rotor_core",
+        "stator_casing",
+        "end_bell"
+      ],
       "instruction": "Slide wound rotor assembly into stator housing and crimp rear end bell tabs securely in place."
     }
   ],
@@ -286,7 +682,9 @@
       "id": "exp_reverse_polarity",
       "title": "Reverse DC Voltage Polarity",
       "action": "reverse",
-      "targets": ["end_bell"],
+      "targets": [
+        "end_bell"
+      ],
       "consequence": "Motor immediately reverses direction of rotation with identical torque curve.",
       "explanation": "In a permanent-magnet brushed DC motor, reversing terminal voltage inverts the direction of current (I) through the armature coils. According to the Lorentz force equation F = I * (L x B), this inverts the torque vector direction."
     },
@@ -294,7 +692,9 @@
       "id": "exp_worn_brushes",
       "title": "Brush Wear Disconnection",
       "action": "disable",
-      "targets": ["carbon_brushes"],
+      "targets": [
+        "carbon_brushes"
+      ],
       "consequence": "Motor sparks heavily, loses rotational torque, and stalls completely.",
       "explanation": "When carbon brushes lose contact with commutator segments, the electrical circuit opens. The inductive energy in the windings arcs across the air gap, degrading the copper commutator and stopping rotation."
     },
@@ -302,7 +702,9 @@
       "id": "exp_overload_voltage",
       "title": "200% Over-Voltage Runaway",
       "action": "overload",
-      "targets": ["copper_windings"],
+      "targets": [
+        "copper_windings"
+      ],
       "consequence": "Rapid overheating of copper insulation, leading to shorted turns and catastrophic thermal failure.",
       "explanation": "Resistive power loss scales with I²R. Doubling voltage doubles stall current and quadruples thermal power dissipation, vaporizing coil enamel and melting solder joints."
     }

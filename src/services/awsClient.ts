@@ -14,7 +14,7 @@ import { mockTutorService, InterpretGoalResponse, ExplainComponentResponse } fro
 import { AssemblyTemplate } from '../types/assembly';
 import { SceneSpec, SceneComponent } from '../types/sceneSpec';
 import { validateAndRepairSceneSpec } from '../utils/specValidator';
-import { getSampleByTopic, DEFAULT_SAMPLE } from '../data/samples/samplesIndex';
+import { DEFAULT_SAMPLE } from '../data/samples/samplesIndex';
 
 export interface ChatHistoryEntry {
   sender: 'user' | 'tutor';
@@ -49,6 +49,7 @@ export class SeeLearnApiClient {
   private lastCallTimestamp: number = 0;
   private readonly COOLDOWN_MS = 5000; // 5-second cooldown
   private specCache = new Map<string, SceneSpec>(); // in-memory cache keyed by lowercase topic
+  private generationController: AbortController | null = null;
 
   constructor() {
     const rawEndpoint = (import.meta as any).env?.VITE_AWS_API_ENDPOINT;
@@ -68,6 +69,11 @@ export class SeeLearnApiClient {
     return Math.max(0, this.MAX_CALLS_PER_SESSION - this.callCount);
   }
 
+  public cancelGeneration(): void {
+    this.generationController?.abort();
+    this.generationController = null;
+  }
+
   public onStatusChange(callback: OfflineStatusListener): () => void {
     this.listeners.add(callback);
     callback(this.isOfflineMode);
@@ -81,8 +87,7 @@ export class SeeLearnApiClient {
     }
   }
 
-  private async fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
-    const controller = new AbortController();
+  private async fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number, controller = new AbortController()): Promise<Response> {
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
@@ -103,6 +108,20 @@ export class SeeLearnApiClient {
     const topic = (rawTopic || '').trim().slice(0, 200); // 200 chars max
     const cacheKey = topic.toLowerCase();
 
+    // Do not try remote generation or substitute a sample when no backend is configured.
+    if (!this.endpoint) {
+      this.setOfflineMode(true);
+      return {
+        success: false,
+        error: 'Connect the AWS backend to generate new topics.',
+        isOffline: true,
+      };
+    }
+
+    this.generationController?.abort();
+    const controller = new AbortController();
+    this.generationController = controller;
+
     // 1. Check in-memory cache
     if (this.specCache.has(cacheKey)) {
       return {
@@ -112,26 +131,7 @@ export class SeeLearnApiClient {
       };
     }
 
-    // 2. If endpoint is empty, check bundled samples or show exact required message
-    if (!this.endpoint) {
-      this.setOfflineMode(true);
-      const bundled = getSampleByTopic(topic);
-      if (bundled) {
-        this.specCache.set(cacheKey, bundled);
-        return {
-          success: true,
-          spec: bundled,
-          isOffline: true,
-        };
-      }
-      return {
-        success: false,
-        error: 'Connect the AWS backend to generate new topics.',
-        isOffline: true,
-      };
-    }
-
-    // 3. Safety Guards: Session Limit
+    // 2. Safety Guards: Session Limit
     if (this.callCount >= this.MAX_CALLS_PER_SESSION) {
       return {
         success: false,
@@ -140,7 +140,7 @@ export class SeeLearnApiClient {
       };
     }
 
-    // 4. Cooldown Check (5 seconds)
+    // 3. Cooldown Check (5 seconds)
     const now = Date.now();
     const timeSinceLast = now - this.lastCallTimestamp;
     if (timeSinceLast < this.COOLDOWN_MS) {
@@ -154,11 +154,10 @@ export class SeeLearnApiClient {
     this.lastCallTimestamp = now;
     this.callCount++;
 
-    // 5. Remote API call with 90-second timeout
+    // 4. Remote API call with 90-second timeout
     try {
-      const targetUrl = this.endpoint.replace(/\/+$/, '') + '/generate';
       const response = await this.fetchWithTimeout(
-        targetUrl,
+        this.endpoint.replace(/\/+$/, ''),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -167,10 +166,11 @@ export class SeeLearnApiClient {
             topic,
           }),
         },
-        90000 // 90-second generation timeout
+        90000, // 90-second generation timeout
+        controller
       );
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         throw new Error(`AWS Gateway HTTP ${response.status}`);
       }
 
@@ -178,11 +178,7 @@ export class SeeLearnApiClient {
 
       // Check for refusal response
       if (data.refusal) {
-        return {
-          success: false,
-          refusal: data.refusal,
-          isOffline: false,
-        };
+        return { success: false, refusal: String(data.refusal), isOffline: false };
       }
 
       // Validate and repair returned JSON spec
@@ -200,14 +196,17 @@ export class SeeLearnApiClient {
         isOffline: false,
       };
     } catch (err: any) {
+      if (controller.signal.aborted) return { success: false, error: 'Request cancelled.', isOffline: false };
       console.warn('[SeeLearn API] Scene generation failed or timed out:', err);
       this.setOfflineMode(true);
 
       return {
         success: false,
-        error: err?.message || 'Failed to generate scene spec. Connect the AWS backend to generate new topics.',
+        error: 'The generation backend is not ready. Open a sample instead.',
         isOffline: true,
       };
+    } finally {
+      if (this.generationController === controller) this.generationController = null;
     }
   }
 
@@ -242,13 +241,12 @@ export class SeeLearnApiClient {
       return this.generateLocalGroundedAnswer(component, spec, question);
     }
 
-    // Call AWS /explain with 10-second timeout
+    // Call the Function URL with 10-second timeout
     try {
-      const targetUrl = this.endpoint.replace(/\/+$/, '') + '/explain';
       const requestBody = {
         action: 'explain',
         componentId: componentId.slice(0, 256),
-        question: (question || '').slice(0, 2000),
+        question: (question || '').slice(0, 300),
         specSummary: {
           topic: spec.topic.slice(0, 200),
           title: spec.title.slice(0, 200),
@@ -286,7 +284,7 @@ export class SeeLearnApiClient {
         body = JSON.stringify(requestBody);
       }
       const response = await this.fetchWithTimeout(
-        targetUrl,
+        this.endpoint.replace(/\/+$/, ''),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -296,7 +294,7 @@ export class SeeLearnApiClient {
       );
 
       if (!response.ok) {
-        throw new Error(`AWS /explain returned HTTP ${response.status}`);
+        throw new Error(`AWS explanation request returned HTTP ${response.status}`);
       }
 
       const data = await response.json();
@@ -309,7 +307,7 @@ export class SeeLearnApiClient {
         confidence: component.confidence,
       };
     } catch (err) {
-      console.warn('[SeeLearn API] /explain failed or timed out. Falling back to grounded local text:', err);
+      console.warn('[SeeLearn API] Explanation failed or timed out:', err);
       this.setOfflineMode(true);
       return this.generateLocalGroundedAnswer(component, spec, question);
     }
@@ -352,29 +350,8 @@ export class SeeLearnApiClient {
 
   // --- Backwards compatibility methods ---
   public async interpretGoal(prompt: string): Promise<InterpretGoalResponse> {
-    if (!this.endpoint) {
-      this.setOfflineMode(true);
-      return mockTutorService.interpretGoal(prompt);
-    }
-    try {
-      const sanitizedUrl = this.endpoint.replace(/\/+$/, '') + '/interpret';
-      const response = await this.fetchWithTimeout(
-        sanitizedUrl,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ goalPrompt: prompt, prompt }),
-        },
-        10000
-      );
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      this.setOfflineMode(false);
-      return data;
-    } catch (err) {
-      this.setOfflineMode(true);
-      return mockTutorService.interpretGoal(prompt);
-    }
+    this.setOfflineMode(true);
+    return mockTutorService.interpretGoal(prompt);
   }
 
   public async explainComponent(

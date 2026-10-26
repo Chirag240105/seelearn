@@ -223,6 +223,9 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
         position,
         rotation,
         material,
+        motionGroup: typeof p.motionGroup === 'string' ? p.motionGroup : undefined,
+        motionCenter: p.motionCenter === true,
+        motionDirection: p.motionDirection === -1 ? -1 : 1,
       };
 
       if (shape === 'tube' && Array.isArray(p.path)) {
@@ -314,11 +317,12 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
   for (const m of rawMechanisms) {
     if (!m || typeof m !== 'object') continue;
     const validTargets = Array.isArray(m.targets)
-      ? m.targets.map(resolveComponentId).filter((t): t is string => Boolean(t))
+      ? m.targets.map(resolveComponentId).filter((t: string | undefined): t is string => Boolean(t))
       : [];
     if (validTargets.length === 0) continue;
 
-    const type = ['spin', 'pulse_flow', 'oscillate', 'slide', 'blink'].includes(m.type) ? m.type : 'spin';
+    if (!['spin', 'oscillate', 'blink'].includes(m.type)) continue;
+    const type = m.type;
     const axisTuple: [number, number, number] =
       Array.isArray(m.axis) && m.axis.length === 3
         ? [Number(m.axis[0]) || 0, Number(m.axis[1]) || 1, Number(m.axis[2]) || 0]
@@ -344,7 +348,7 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
     const s = rawSteps[sIdx];
     if (!s || typeof s !== 'object') continue;
     const validCompIds = Array.isArray(s.componentIds)
-      ? s.componentIds.map(resolveComponentId).filter((id): id is string => Boolean(id))
+      ? s.componentIds.map(resolveComponentId).filter((id: string | undefined): id is string => Boolean(id))
       : [];
 
     repairedSteps.push({
@@ -362,7 +366,7 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
     const exp = rawExperiments[eIdx];
     if (!exp || typeof exp !== 'object') continue;
     const validTargets = Array.isArray(exp.targets)
-      ? exp.targets.map(resolveComponentId).filter((t): t is string => Boolean(t))
+      ? exp.targets.map(resolveComponentId).filter((t: string | undefined): t is string => Boolean(t))
       : [];
     if (validTargets.length === 0) continue;
 

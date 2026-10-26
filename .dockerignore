@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+node_modules
+dist
+build
+eval/clips
+eval/results
+__pycache__
+*.pyc

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle, ArrowRight, RotateCcw, X, Play } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, RotateCcw, X, Play } from 'lucide-react';
 import { SceneExperiment } from '../../types/sceneSpec';
 
 interface ExperimentModalProps {
@@ -17,6 +17,19 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
 }) => {
   const [selectedExpIndex, setSelectedExpIndex] = useState(0);
   const [isSimulated, setIsSimulated] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSimulated(false);
+        onApplyExperiment(null);
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [isOpen, onClose, onApplyExperiment]);
 
   if (!isOpen || !experiments || experiments.length === 0) return null;
 
@@ -40,20 +53,38 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none">
-      <div className="max-w-xl w-full bg-[#0F172A] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm select-none"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)' }}
+    >
+      <div
+        className="max-w-xl w-full rounded-2xl border shadow-2xl overflow-hidden flex flex-col"
+        style={{
+          backgroundColor: 'var(--sl-bg-surface)',
+          borderColor: 'var(--sl-border)',
+          color: 'var(--sl-text-primary)',
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
-              <AlertTriangle className="w-5 h-5" />
+        <div
+          className="flex items-center justify-between p-4 border-b"
+          style={{ borderColor: 'var(--sl-border-subtle)', backgroundColor: 'var(--sl-bg-raised)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className="p-1.5 rounded-lg border"
+              style={{
+                backgroundColor: 'var(--sl-warning-muted)',
+                borderColor: 'var(--sl-warning)',
+                color: 'var(--sl-warning)',
+              }}
+            >
+              <AlertTriangle className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white font-['Outfit']">
-                What-If Hardware Failure Lab
-              </h2>
-              <p className="text-xs text-slate-400 font-mono">
-                Observe Physical Degradation & Consequence
+              <h2 className="text-sm font-bold tracking-tight">What-If Hardware Failure Lab</h2>
+              <p className="text-xs font-mono" style={{ color: 'var(--sl-text-muted)' }}>
+                Test Component Fault Tolerances & Degradation
               </p>
             </div>
           </div>
@@ -63,14 +94,23 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
               handleReset();
               onClose();
             }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1 rounded-lg border transition cursor-pointer"
+            style={{
+              backgroundColor: 'var(--sl-bg-surface)',
+              borderColor: 'var(--sl-border)',
+              color: 'var(--sl-text-muted)',
+            }}
+            title="Close Lab"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Experiment Selector Tabs */}
-        <div className="flex border-b border-slate-800 overflow-x-auto bg-slate-900/50 p-2 gap-2 text-xs">
+        <div
+          className="flex border-b overflow-x-auto p-2 gap-2 text-xs"
+          style={{ borderColor: 'var(--sl-border-subtle)', backgroundColor: 'var(--sl-bg-base)' }}
+        >
           {experiments.map((exp, idx) => (
             <button
               key={exp.id || idx}
@@ -79,11 +119,12 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
                 handleReset();
                 setSelectedExpIndex(idx);
               }}
-              className={`px-3 py-2 rounded-lg font-medium whitespace-nowrap transition cursor-pointer ${
-                selectedExpIndex === idx
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
+              className="px-3 py-1.5 rounded-lg font-medium whitespace-nowrap border transition cursor-pointer"
+              style={{
+                backgroundColor: selectedExpIndex === idx ? 'var(--sl-warning-muted)' : 'var(--sl-bg-surface)',
+                borderColor: selectedExpIndex === idx ? 'var(--sl-warning)' : 'var(--sl-border)',
+                color: selectedExpIndex === idx ? 'var(--sl-warning)' : 'var(--sl-text-secondary)',
+              }}
             >
               {exp.title}
             </button>
@@ -91,34 +132,48 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-5 space-y-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono uppercase bg-slate-800 text-slate-300 mb-2">
+            <div
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono uppercase border mb-2"
+              style={{
+                backgroundColor: 'var(--sl-bg-raised)',
+                borderColor: 'var(--sl-border)',
+                color: 'var(--sl-text-secondary)',
+              }}
+            >
               Action: {actionLabels[currentExp.action] || currentExp.action}
             </div>
-            <h3 className="text-base font-bold text-white mb-2">{currentExp.title}</h3>
-            <p className="text-xs text-slate-400">
-              Targets affected:{' '}
-              <span className="font-mono text-sky-400">
-                {currentExp.targets.join(', ')}
-              </span>
+            <h3 className="text-base font-bold mb-1.5">{currentExp.title}</h3>
+            <p className="text-xs" style={{ color: 'var(--sl-text-muted)' }}>
+              Targets affected: <span className="font-mono font-semibold" style={{ color: 'var(--sl-accent)' }}>{currentExp.targets.join(', ')}</span>
             </p>
           </div>
 
           {/* Simulation Outcome */}
-          <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-            <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <span>Observed Physical Consequence:</span>
+          <div
+            className="p-4 rounded-xl border space-y-3"
+            style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)' }}
+          >
+            <div className="text-xs font-semibold" style={{ color: 'var(--sl-text-secondary)' }}>
+              Observed Physical Consequence:
             </div>
-            <div className="text-sm font-medium text-amber-300 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg leading-relaxed">
+            <div
+              className="text-xs sm:text-sm font-medium p-3 rounded-lg border leading-relaxed"
+              style={{
+                backgroundColor: 'var(--sl-warning-muted)',
+                borderColor: 'var(--sl-warning)',
+                color: 'var(--sl-text-primary)',
+              }}
+            >
               {currentExp.consequence}
             </div>
 
-            <div className="pt-2 border-t border-slate-800/80">
-              <span className="text-[11px] font-semibold text-slate-400 block mb-1">
+            <div className="pt-2 border-t" style={{ borderColor: 'var(--sl-border-subtle)' }}>
+              <span className="text-xs font-semibold block mb-1" style={{ color: 'var(--sl-text-muted)' }}>
                 Engineering Explanation:
               </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
                 {currentExp.explanation}
               </p>
             </div>
@@ -126,27 +181,35 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between">
+        <div
+          className="p-3.5 border-t flex items-center justify-between"
+          style={{ borderColor: 'var(--sl-border-subtle)', backgroundColor: 'var(--sl-bg-raised)' }}
+        >
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer"
+            style={{
+              backgroundColor: 'var(--sl-bg-surface)',
+              borderColor: 'var(--sl-border)',
+              color: 'var(--sl-text-secondary)',
+            }}
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Normal State</span>
+            <span>Reset Normal</span>
           </button>
 
           <button
             type="button"
             onClick={handleRunSimulation}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-xs transition cursor-pointer shadow-md ${
-              isSimulated
-                ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-                : 'bg-sky-500 text-slate-950 hover:bg-sky-400'
-            }`}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-xs transition cursor-pointer shadow-md"
+            style={{
+              backgroundColor: isSimulated ? 'var(--sl-warning)' : 'var(--sl-accent)',
+              color: isSimulated ? '#0f172a' : '#ffffff',
+            }}
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>{isSimulated ? 'Simulating in 3D' : 'Simulate Fault in 3D'}</span>
+            <span>{isSimulated ? 'Simulating Fault in 3D' : 'Simulate Fault in 3D'}</span>
           </button>
         </div>
       </div>

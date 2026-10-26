@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+.env
+node_modules/
+__pycache__/
+.aws-sam/
+eval/clips/*.mp4

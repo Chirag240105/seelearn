@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, X, Layers, Activity } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Camera, X } from 'lucide-react';
 import { GestureState, VisionMetrics } from '../../types/vision';
 
 interface CameraDebugOverlayProps {
@@ -21,10 +21,16 @@ export const CameraDebugOverlay: React.FC<CameraDebugOverlayProps> = ({
   claheEnabled,
   metrics,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [isOpen, onClose]);
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-16 right-6 md:right-[25rem] z-30 w-72 bg-[#0B132B]/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-2xl overflow-hidden select-none">
+    <div className="absolute top-4 right-4 z-30 w-72 bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden select-none">
       {/* Header */}
       <div className="flex items-center justify-between p-2.5 bg-slate-900 border-b border-slate-800 text-xs">
         <div className="flex items-center gap-2 font-mono text-sky-400 font-bold">
@@ -66,7 +72,7 @@ export const CameraDebugOverlay: React.FC<CameraDebugOverlayProps> = ({
           </div>
         )}
 
-        {/* Filtered Index Fingertip (Kalman Smooth Green) */}
+        {/* Filtered Index Fingertip */}
         {filteredCursor && (
           <div
             className="absolute w-4 h-4 rounded-full border-2 border-emerald-400 bg-emerald-500/40 -translate-x-1/2 -translate-y-1/2 shadow-lg shadow-emerald-500/50 flex items-center justify-center transition-all duration-75"
@@ -77,7 +83,7 @@ export const CameraDebugOverlay: React.FC<CameraDebugOverlayProps> = ({
           >
             <div className="w-1.5 h-1.5 rounded-full bg-white" />
             <span className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 text-[8px] font-mono text-emerald-300 font-bold whitespace-nowrap">
-              KALMAN
+              FILTERED
             </span>
           </div>
         )}
@@ -100,9 +106,9 @@ export const CameraDebugOverlay: React.FC<CameraDebugOverlayProps> = ({
         <div className="flex items-center justify-between text-slate-400">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>Kalman Filtered</span>
+            <span>Filtered Measurement</span>
           </div>
-          <span className="text-emerald-400">Accuracy: {(metrics.gestureAccuracy ?? 98.4).toFixed(1)}%</span>
+          <span className="text-emerald-400">Frame latency: {metrics.latencyMs.toFixed(1)} ms</span>
         </div>
       </div>
     </div>

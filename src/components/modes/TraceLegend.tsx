@@ -1,114 +1,146 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { ChevronDown, ChevronUp, X, Layers } from 'lucide-react';
 import { ConnectionType } from '../../types/sceneSpec';
 
 interface TraceLegendProps {
   activeFilter: 'all' | ConnectionType;
   onSelectFilter: (filter: 'all' | ConnectionType) => void;
   counts: Record<ConnectionType, number>;
+  onClose: () => void;
 }
 
 export const TraceLegend: React.FC<TraceLegendProps> = ({
   activeFilter,
   onSelectFilter,
   counts,
+  onClose,
 }) => {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [onClose]);
+
   const items: Array<{
     type: ConnectionType;
     label: string;
-    dotColor: string;
-    bgActive: string;
-    borderActive: string;
-    textActive: string;
+    tokenColor: string;
   }> = [
     {
       type: 'power',
       label: 'Power Distribution',
-      dotColor: 'bg-amber-400',
-      bgActive: 'bg-amber-500/15',
-      borderActive: 'border-amber-500/50',
-      textActive: 'text-amber-200',
+      tokenColor: 'var(--sl-conn-power)',
     },
     {
       type: 'signal',
       label: 'Signal & Control',
-      dotColor: 'bg-cyan-400',
-      bgActive: 'bg-cyan-500/15',
-      borderActive: 'border-cyan-500/50',
-      textActive: 'text-cyan-200',
+      tokenColor: 'var(--sl-conn-signal)',
     },
     {
       type: 'data',
-      label: 'High-Speed Data Bus',
-      dotColor: 'bg-violet-400',
-      bgActive: 'bg-violet-500/15',
-      borderActive: 'border-violet-500/50',
-      textActive: 'text-violet-200',
+      label: 'Data Bus',
+      tokenColor: 'var(--sl-conn-data)',
     },
     {
       type: 'mechanical',
       label: 'Mechanical Linkage',
-      dotColor: 'bg-sky-300',
-      bgActive: 'bg-sky-500/15',
-      borderActive: 'border-sky-500/50',
-      textActive: 'text-sky-200',
+      tokenColor: 'var(--sl-conn-mechanical)',
     },
     {
       type: 'thermal',
-      label: 'Thermal Dissipation',
-      dotColor: 'bg-rose-400',
-      bgActive: 'bg-rose-500/15',
-      borderActive: 'border-rose-500/50',
-      textActive: 'text-rose-200',
+      label: 'Thermal Channel',
+      tokenColor: 'var(--sl-conn-thermal)',
     },
   ];
 
   return (
-    <div className="absolute top-16 right-6 md:right-[25rem] z-20 bg-[#0F172A]/90 backdrop-blur-md border border-slate-800 rounded-xl p-3 shadow-xl select-none max-w-xs w-full text-xs">
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-bold text-white uppercase tracking-wider text-[10px] font-['Outfit']">
-          Trace Network Layer
-        </span>
+    <div
+      className="absolute bottom-20 left-4 z-20 rounded-xl border p-3 shadow-xl select-none w-72 text-xs backdrop-blur-xl transition-all"
+      style={{
+        backgroundColor: 'var(--sl-bg-surface)',
+        borderColor: 'var(--sl-border)',
+        color: 'var(--sl-text-primary)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-2 pb-1 border-b" style={{ borderColor: 'var(--sl-border-subtle)' }}>
         <button
           type="button"
-          onClick={() => onSelectFilter('all')}
-          className={`text-[10px] font-medium px-2 py-0.5 rounded cursor-pointer ${
-            activeFilter === 'all'
-              ? 'bg-sky-500 text-slate-950 font-bold'
-              : 'text-slate-400 hover:text-white'
-          }`}
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center gap-1.5 font-bold text-xs cursor-pointer"
+          style={{ color: 'var(--sl-text-primary)' }}
         >
-          Show All
+          <Layers className="w-3.5 h-3.5" style={{ color: 'var(--sl-accent)' }} />
+          <span>Connection Layer Filter</span>
+          {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
         </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onSelectFilter('all')}
+            className="text-xs font-semibold px-2 py-0.5 rounded border transition cursor-pointer"
+            style={{
+              backgroundColor: activeFilter === 'all' ? 'var(--sl-accent)' : 'var(--sl-bg-raised)',
+              borderColor: activeFilter === 'all' ? 'var(--sl-accent)' : 'var(--sl-border)',
+              color: activeFilter === 'all' ? '#ffffff' : 'var(--sl-text-secondary)',
+            }}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close trace legend"
+            className="p-1 rounded border transition cursor-pointer"
+            style={{
+              backgroundColor: 'var(--sl-bg-raised)',
+              borderColor: 'var(--sl-border)',
+              color: 'var(--sl-text-muted)',
+            }}
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        {items.map((item) => {
-          const count = counts[item.type] || 0;
-          if (count === 0 && activeFilter !== item.type) return null;
-          const isSelected = activeFilter === item.type;
+      {!collapsed && (
+        <div className="space-y-1.5">
+          {items.map((item) => {
+            const count = counts[item.type] || 0;
+            const isSelected = activeFilter === item.type;
 
-          return (
-            <button
-              key={item.type}
-              type="button"
-              onClick={() => onSelectFilter(isSelected ? 'all' : item.type)}
-              className={`w-full flex items-center justify-between p-2 rounded-lg border text-left transition-colors cursor-pointer ${
-                isSelected
-                  ? `${item.bgActive} ${item.borderActive} ${item.textActive}`
-                  : 'bg-slate-900/60 border-slate-800 hover:bg-slate-800 text-slate-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${item.dotColor}`} />
-                <span className="font-semibold text-xs">{item.label}</span>
-              </div>
-              <span className="text-[10px] font-mono text-slate-400">
-                {count} {count === 1 ? 'trace' : 'traces'}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={item.type}
+                type="button"
+                onClick={() => onSelectFilter(isSelected ? 'all' : item.type)}
+                className="w-full flex items-center justify-between p-2 rounded-lg border text-left text-xs transition cursor-pointer"
+                style={{
+                  backgroundColor: isSelected ? 'var(--sl-bg-raised)' : 'transparent',
+                  borderColor: isSelected ? item.tokenColor : 'var(--sl-border-subtle)',
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: item.tokenColor }}
+                  />
+                  <span className="font-medium" style={{ color: 'var(--sl-text-primary)' }}>
+                    {item.label}
+                  </span>
+                </div>
+                <span className="font-mono text-xs px-1.5 py-0.5 rounded" style={{ color: 'var(--sl-text-muted)', backgroundColor: 'var(--sl-bg-base)' }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

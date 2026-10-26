@@ -1,169 +1,107 @@
-# SeeLearn: Prompt-Driven, Gesture-Controlled 3D Engineering Tutor
+# SeeLearn
 
-> **OpenCV + AWS Hackathon Edition**  
-> A prompt-driven, hand-gesture-controlled 3D spatial engineering tutor. Point with your finger, pinch to inspect components, trace wiring diagrams, simulate motor aerodynamics, and explore hardware failure modes in real time.
+SeeLearn is a browser-based conceptual engineering assembly viewer. It opens bundled scene samples, accepts validated generated scene specifications from an optional AWS backend, and supports mouse interaction or a local Python hand-gesture service.
 
----
+## Architecture
 
-## 1. System Architecture
-
-```
- ┌─────────────────────────────────────────────────────────────────────────────┐
- │                            USER INTERACTION LAYER                           │
- │  Prompt Input ("Racing Drone") ──▶ Stepped Progress ──▶ Fullscreen 3D Scene │
- └──────────────────────┬──────────────────────────────────────▲───────────────┘
-                        │ Goal / Query                          │ Raycast Select
-                        ▼                                       │ & Gesture Cursor
- ┌──────────────────────────────────────────────────────────────┴──────────────┐
- │                      THREE.JS / REACT FRONTEND LAYER                        │
- │  - Procedural 3D Drone & Robot Assemblies (Glow Wireframe + Translucent)    │
- │  - Interaction Modes: Explore · Trace Links · Operate Spin · What-If        │
- │  - Local Grounded Knowledge Engine (Zero-Hallucination Template Grounding)  │
- │  - Mouse / Touch / Keyboard Fallback replicates all gesture interactions    │
- └──────────────────────▲──────────────────────────────────────▲───────────────┘
-                        │ Hand Coordinates / Gestures           │ Grounded AI
-                        │ (Normalized (x,y), Pinch, Palm)       │ Interpret & Explain
- ┌──────────────────────┴──────────────────┐ ┌──────────────────┴──────────────┐
- │       OPENCV VISION SERVICE             │ │        AWS SERVERLESS BACKEND   │
- │  Local Python Service (or Web-Worker):  │ │  (Mock Mode Toggle for Offline) │
- │  - Threaded Camera Capture (60 FPS)     │ │  - API Gateway:                 │
- │  - LAB CLAHE Light Balancing Preproc    │ │      POST /interpret            │
- │  - One-Euro / Kalman Filter Tracking    │ │      POST /explain              │
- │  - Hysteresis Pinch State Machine       │ │  - Lambda + Bedrock (Claude)    │
- │  - Dead-Zone & Tracking-Loss Recovery   │ │  - Strict JSON Schema Validator │
- │  - Real-time Jitter / Accuracy Metrics  │ │  - DynamoDB Session Summary     │
- └─────────────────────────────────────────┘ └─────────────────────────────────┘
+```mermaid
+flowchart LR
+  Browser[React and Three.js browser] <-->|local WebSocket cursor and gesture state| Vision[Local Python vision service]
+  Vision --> OpenCV[OpenCV capture preprocessing filtering gesture logic metrics]
+  Vision --> MediaPipe[MediaPipe hand landmarks]
+  Browser -->|generate or explain request| FunctionURL[AWS Lambda Function URL]
+  FunctionURL --> Bedrock[Amazon Bedrock]
+  FunctionURL --> CloudWatch[CloudWatch logs and metrics]
+  Eval[Evaluation job: JSON recordings and optional video] --> OpenCV
+  Eval --> Outputs[CSV Markdown PNG]
+  Outputs --> S3[Optional S3 result storage]
 ```
 
----
+MediaPipe supplies hand landmarks. OpenCV handles camera capture, frame flipping and resizing, optional CLAHE preprocessing, Kalman smoothing, gesture logic, cursor metrics, and the video evaluation pipeline. The Python service sends cursor and gesture packets over a local WebSocket; webcam frames are not sent to AWS. When the vision service is unavailable, the browser retains mouse interaction.
 
-## 2. Quickstart Guide
+The browser can open four bundled specifications: racing drone, DC motor, smartphone, and DDR5 RAM. Demo Mode forces prompt submissions to resolve to a bundled sample and avoids calling the generation endpoint.
 
-### Option A: Run Full Web App (Offline Ready)
-The application works 100% out-of-the-box in the browser with full mouse, keyboard, and in-browser camera fallback:
-```bash
-# Install dependencies
+## Versions
+
+These are the installed Python package versions recorded from the project environment. OpenCV reports `cv2.__version__` as `5.0.0`; its installed distribution version is `opencv-python==5.0.0.93`.
+
+| Package | Pin |
+|---|---|
+| Python | 3.11.9 |
+| opencv-python | 5.0.0.93 |
+| MediaPipe | 0.10.9 |
+| protobuf | 4.25.3 |
+| NumPy | 2.4.6 |
+| websockets | 17.1 |
+| matplotlib (evaluation) | 3.10.9 |
+
+The Python service pins are in `vision_service/requirements.txt`; evaluation pins are in `eval/requirements.txt`.
+
+## Setup
+
+### Browser
+
+Install the Node dependencies, configure the optional environment values below, and start Vite:
+
+```sh
 npm install
-
-# Start development server
 npm run dev
 ```
-Open `http://localhost:3000` in any modern browser.
 
-### Option B: Run Python OpenCV Vision Service (Hardware Gestures)
-```bash
-cd vision_service
-pip install -r requirements.txt
-python seelearn_vision.py
-```
-*The React frontend automatically connects to `ws://localhost:8765` when the Python vision service starts.*
+Open the local address printed by Vite. Use the sample cards or enable Demo Mode for a network-independent presentation.
 
-### Option C: Deploy Serverless Backend to AWS
-```bash
-cd aws
-chmod +x deploy.sh
-./deploy.sh
+### Local vision service
+
+Create and activate a Python environment, then install the pinned dependencies and start the service:
+
+```sh
+python -m pip install -r vision_service/requirements.txt
+python vision_service/seelearn_vision.py
 ```
 
----
+To record a labeled clip for evaluation:
 
-## 3. OpenCV Computer Vision Deep Dive
-
-The OpenCV vision service performs real mathematical signal processing and computer vision engineering:
-
-1. **Threaded Capture (`ThreadedCamera`)**:
-   Runs image acquisition in an independent daemon thread, eliminating frame buffer lag and decoupling camera I/O from inference. Delivers steady 60 FPS capture.
-2. **LAB Color Space CLAHE Preprocessing**:
-   Converts incoming BGR frames to the LAB perceptual color space (`cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)`) and applies Contrast Limited Adaptive Histogram Equalization (CLAHE, clip limit 2.5, tile size 8×8) exclusively to the luminance ($L$) channel. This normalizes harsh room shadows and low-light glare without color distortion.
-3. **OpenCV Kalman Filter & Velocity-Aware Dead Zone**:
-   - Discrete 4-state Kalman Filter: $\mathbf{x} = [x, y, \dot{x}, \dot{y}]^T$.
-   - Measurement: $\mathbf{z} = [x, y]^T$.
-   - Accompanied by an adaptive velocity dead zone: when the index fingertip moves slower than 3.5 px/frame, positions are softly clamped to the anchor point, reducing micro-tremors by **98.1%**. When rapid motion is detected, the dead zone dynamically bypasses to deliver zero perceived latency.
-4. **Hysteresis Gesture State Machine**:
-   - `IDLE` ➔ `POINTING` ➔ `PINCH_START` ➔ `PINCH_HOLD` ➔ `PINCH_RELEASE` ➔ `IDLE`.
-   - Pinch distance is invariant to camera distance: normalized by the subject's hand scale (wrist to middle MCP knuckle).
-   - Dual-threshold hysteresis prevents rapid trigger chatter:
-     - `PINCH_ON_THRESHOLD` = 0.32
-     - `PINCH_OFF_THRESHOLD` = 0.44
-   - Requires minimum 2 consecutive frames to transition into `PINCH_START`.
-   - Open Palm gesture detection triggers 3D orbit rotation.
-5. **Tracking-Loss Recovery & Re-Entry Safety**:
-   - When hand tracking is dropped, the system holds the last valid position for up to 12 frames while fading the cursor, then resets to `IDLE`.
-   - Imposes an 8-frame grace period upon hand re-detection so re-entering the camera frame **never** triggers an unintended selection.
-6. **Calibration Routine**:
-   4-corner interactive calibration routine maps the user's comfortable reach boundaries to the $[0, 1]$ screen viewport.
-
----
-
-## 4. Benchmark & Evaluation Results
-
-Run the empirical benchmark evaluation script:
-```bash
-python3 vision_service/evaluate_vision.py
+```sh
+python vision_service/seelearn_vision.py --record eval/clips/still_01.json --label "still hand"
 ```
 
-### Measured Performance Summary
+The service requires a usable local camera and OS camera permission. It does not upload camera frames.
 
-| Metric / Filter | Jitter (Std-Dev) | Jitter Reduction | Latency Penalty | False Positives |
-| :--- | :--- | :--- | :--- | :--- |
-| **Raw Optical Measurement** | ±4.21 px | Baseline | 0.0 ms | 14 false pinches |
-| **5-Frame Moving Average** | ±1.80 px | 57.3% | +33.3 ms lag | 4 false pinches |
-| **OpenCV Kalman + Dead Zone** | **±0.08 px** | **98.1%** | **+1.2 ms lag** | **0 false pinches** |
+### AWS backend
 
-- **Lighting Performance with LAB CLAHE**: Landmark confidence increases from **0.54 ± 0.18** (raw) to **0.93 ± 0.05** (CLAHE) under dim 10-lux ambient lighting.
-- **Latency Budget Breakdown**:
-  - Threaded Capture: 2.8 ms
-  - LAB CLAHE Preprocessing: 2.1 ms
-  - MediaPipe Tracking: 6.2 ms
-  - Kalman Filter & State Machine: 0.8 ms
-  - WebSocket Serialization: 0.4 ms
-  - **Total Processing Pipeline**: **12.3 ms** (Well within the 16.6 ms budget for 60 FPS).
+The backend is defined in `aws/` and uses a Lambda Function URL with Amazon Bedrock. Follow `aws/README.md` for prerequisites, model access, and deployment steps. Set the deployed Function URL as `VITE_AWS_API_ENDPOINT` in the browser environment. The backend writes its operational logs through Lambda's CloudWatch integration. Deployment requires AWS account authorization and may incur charges.
 
----
+### Evaluation
 
-## 5. 3-Minute Live Hackathon Demo Script
+Install the evaluation dependencies and run against real recordings:
 
-### Minute 0:00 - 0:45: The Hook & Prompt-Driven Discovery
-1. **Action**: Open the SeeLearn home screen (`Screen A`).
-2. **Speaker Script**:
-   > *"Judges, understanding complex hardware is notoriously difficult. Today, we're demonstrating SeeLearn—a prompt-driven, hand-gesture-controlled 3D engineering tutor built on OpenCV and AWS. Let's ask: 'I'm building a racing drone, show me components, wiring and how it works'."*
-3. **Action**: Click **Run**. The 3-stage animated loader executes (*Understanding your goal* ➔ *Selecting assembly* ➔ *Building scene*).
-4. **Speaker Script**:
-   > *"Notice our zero-hallucination architecture: SeeLearn never invents 3D meshes or electronics. It selects our pre-reviewed, engineering-accurate 6S racing drone template."*
+```sh
+python -m pip install -r eval/requirements.txt
+python eval/evaluate.py
+```
 
-### Minute 0:45 - 1:45: 3D Gesture Interaction & OpenCV Engineering
-1. **Action**: The 3D scene opens in glowing translucent blue. Raise your hand in front of the webcam (or move the mouse). Point at the **Flight Controller** and pinch your thumb and index finger together.
-2. **Speaker Script**:
-   > *"Watch the cursor. Behind the scenes, our OpenCV vision service is capturing 60 FPS in a dedicated thread. Notice the stability: without filtering, optical hand tracking suffers over 4 pixels of tremor. Our OpenCV Kalman filter with velocity dead-zoning reduces jitter by 98.1% with only 1.2ms latency.*
-   > *When I pinch, our hysteresis state machine triggers a clean selection without double-clicks. The unrelated components fade back, highlighting the Flight Controller."*
-3. **Action**: Click the **CLAHE toggle** on the top-left HUD and open the **OpenCV Debug View**.
-4. **Speaker Script**:
-   > *"Here in the debug overlay, you can see the red raw tracking point versus the emerald Kalman-stabilized coordinate, as well as our LAB color-space CLAHE processor leveling ambient lighting in real time."*
+Place JSON recordings in `eval/clips/`. The evaluator writes measured results to `eval/results/`. For image-based preprocessing ablation, also provide matching video recordings and pass `--video PATH --label LABEL`. Evaluate the deployed generator with:
 
-### Minute 1:45 - 2:30: Trace, Operate & Physical Grounding
-1. **Action**: Click **Trace** on the bottom toolbar.
-2. **Speaker Script**:
-   > *"In Trace mode, SeeLearn renders 3D physical splines. Yellow indicates the high-current 6S power bus: Battery to Capacitor, to 4-in-1 ESC, to the motors. Cyan shows high-speed digital signal lines: ExpressLRS receiver to Flight Controller, and 8kHz DShot commands to the ESC. Every single connection references real engineering specs."*
-3. **Action**: Click **Operate**. The propellers begin spinning.
-4. **Speaker Script**:
-   > *"Under Operate mode, the 4 motors spin with physically correct CW and CCW rotation to conserve angular momentum, generating upward thrust vectors calculated from disk momentum theory."*
+```sh
+python eval/test_generation.py https://YOUR_LAMBDA_FUNCTION_URL/
+```
 
-### Minute 2:30 - 3:00: What-If Experiment & AWS Bedrock
-1. **Action**: Click **What-If Experiment**. Select *"What happens if Motor 4 suddenly fails mid-flight?"*.
-2. **Speaker Script**:
-   > *"Engineering is about understanding failure modes. Our What-If lab follows a Predict ➔ Change ➔ Observe ➔ Explain cycle. If Motor 4 dies, does the drone glide, or enter an uncontrollable death roll? Let's predict death roll and execute."*
-3. **Action**: Click **Execute What-If in 3D**. Motor 4 drops to 0 RPM, its thrust arrow collapses, and the explanation card displays the root cause.
-4. **Speaker Script**:
-   > *"Underneath, our AWS Serverless architecture powers the tutoring pipeline using Amazon Bedrock with strict JSON schema validation, backed by DynamoDB for telemetry. Thank you—we're ready for your questions!"*
+This sends requests to the supplied live endpoint and writes latency and outcome files. EC2 and S3 steps are in `eval/run_on_aws.md`.
 
----
+## Frontend environment
 
-## 6. Top 5 Likely Demo Failures & Instant Fixes
+| Variable | Purpose | Example |
+|---|---|---|
+| `VITE_AWS_API_ENDPOINT` | Optional deployed Lambda Function URL. Leave empty for samples and offline behavior. | `https://example.lambda-url.region.on.aws/` |
+| `VITE_VISION_WS_URL` | Local vision service WebSocket address. | `ws://localhost:8765` |
 
-| Failure Scenario | Root Cause | Instant Fix (Within 2 Seconds) |
-| :--- | :--- | :--- |
-| **1. Webcam permission blocked or room too dark** | Browser prompt was dismissed, or lighting causes landmark dropout | Click **Vision Active** on top bar to toggle; the UI will seamlessly switch to mouse/keyboard fallback (`Space` to pinch, click to select). If room is dim, click **LAB CLAHE** in the HUD to equalize contrast. |
-| **2. Python service not started (`ws://localhost:8765` down)** | Presenter forgot to launch `seelearn_vision.py` before presenting | **No panic needed**: SeeLearn features an embedded **Browser Vision Engine** fallback! The browser uses client-side WebCam & Kalman filtering automatically if the Python daemon is not connected. |
-| **3. Accidental zoom or camera flipped upside down** | Over-aggressive trackpad pinch or orbit | Click the **Reset** icon on the bottom right toolbar (`RotateCcw` button). The camera instantaneously snaps back to `[3.8, 3.2, 4.2]` looking at origin. |
-| **4. Hand jitter / involuntary cursor shaking** | Nervousness or hand too far from lens | Open the OpenCV HUD ➔ Click **Calibrate** ➔ Touch the 4 corner targets for 1 second each. This remaps the user's comfortable reach box to the full screen. |
-| **5. AWS API Gateway network timeout on conference Wi-Fi** | Captive portal or slow Wi-Fi latency | The applet is equipped with an automatic **Mock Mode Fallback**: if any network error occurs, the client automatically switches to the zero-latency local grounded tutor without throwing an error to the audience. |
+Only these frontend variables are required by the browser application. AWS deployment configuration is documented in `aws/README.md`.
+
+## Limitations and responsible use
+
+- Generated and bundled assemblies are conceptual teaching visuals. They are not manufacturing drawings, safety guidance, or certified engineering designs. Verify critical details independently.
+- Generation depends on the deployed backend and model availability. Scene validation constrains the output format but does not establish engineering correctness.
+- Harmful-topic refusal is implemented as a limited backend topic filter; it is not a complete safety classifier.
+- Camera capture and landmark processing run locally. The local browser connection receives cursor and gesture information; video frames are not sent to the backend.
+- Gesture recognition depends on camera access, lighting, framing, and hand visibility. Mouse controls remain available.
+- Evaluation output is based only on supplied recordings and endpoint responses. Missing recordings or unavailable measures are reported as such; the repository does not include benchmark results.

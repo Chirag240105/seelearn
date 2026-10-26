@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# SeeLearn AWS Serverless Deployment Script
-# Provisions API Gateway, Lambdas, DynamoDB, Bedrock IAM & CloudFront
+# SeeLearn Lambda Function URL deployment
 # ==============================================================================
 
 set -e
 
 STACK_NAME="seelearn-serverless"
 REGION="${AWS_REGION:-us-east-1}"
-BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-anthropic.claude-3-haiku-20240307-v1:0}"
+BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-}"
+MODEL_PROVIDER="${MODEL_PROVIDER:-bedrock}"
+GEMINI_API_KEY="${GEMINI_API_KEY:-}"
 
 echo "========================================================"
-echo "    Deploying SeeLearn Architecture to AWS ($REGION)    "
+echo "    Deploying SeeLearn backend to AWS ($REGION)    "
 echo "========================================================"
 
 # Check for AWS SAM CLI
@@ -25,23 +26,28 @@ echo "[1/3] Building SAM serverless artifacts..."
 sam build --template-file template.yaml
 
 echo "[2/3] Deploying CloudFormation stack: $STACK_NAME ..."
-sam deploy \
-    --stack-name "$STACK_NAME" \
-    --region "$REGION" \
-    --resolve-s3 \
-    --capabilities CAPABILITY_IAM \
-    --parameter-overrides BedrockModelId="$BEDROCK_MODEL_ID" BedrockRegion="$REGION" \
-    --no-fail-on-empty-changeset
+if [ -f "samconfig.toml" ]; then
+    sam deploy --stack-name "$STACK_NAME" --region "$REGION" --resolve-s3 \
+        --capabilities CAPABILITY_IAM \
+        --parameter-overrides BedrockModelId="$BEDROCK_MODEL_ID" ModelProvider="$MODEL_PROVIDER" \
+        GeminiApiKey="$GEMINI_API_KEY" BedrockRegion="$REGION" \
+        --no-fail-on-empty-changeset
+else
+    sam deploy --guided --stack-name "$STACK_NAME" --region "$REGION" --resolve-s3 \
+        --capabilities CAPABILITY_IAM \
+        --parameter-overrides BedrockModelId="$BEDROCK_MODEL_ID" ModelProvider="$MODEL_PROVIDER" \
+        GeminiApiKey="$GEMINI_API_KEY" BedrockRegion="$REGION"
+fi
 
-echo "[3/3] Retrieving API Gateway endpoint..."
-API_ENDPOINT=$(aws cloudformation describe-stacks \
+echo "[3/3] Retrieving Function URL..."
+FUNCTION_URL=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
     --region "$REGION" \
-    --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+    --query "Stacks[0].Outputs[?OutputKey=='FunctionUrl'].OutputValue" \
     --output text)
 
 echo "========================================================"
-echo "✅ SeeLearn AWS Deployment Complete!"
-echo "API Gateway Endpoint: $API_ENDPOINT"
-echo "Set in frontend .env: VITE_AWS_API_ENDPOINT=\"$API_ENDPOINT\""
+echo "SeeLearn AWS deployment complete."
+echo "Function URL: $FUNCTION_URL"
+echo "Set in frontend .env: VITE_AWS_API_ENDPOINT=\"$FUNCTION_URL\""
 echo "========================================================"

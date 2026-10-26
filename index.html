@@ -1,21 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SeeLearn - Gesture-Controlled 3D Engineering Tutor</title>
-    <meta name="description" content="Prompt-driven, hand-gesture-controlled 3D engineering tutor for OpenCV + AWS, featuring interactive hardware exploration and real-time vision raycasting." />
-    <meta property="og:title" content="SeeLearn - Gesture-Controlled 3D Engineering Tutor" />
-    <meta property="og:description" content="Prompt-driven, hand-gesture-controlled 3D engineering tutor for OpenCV + AWS, featuring interactive hardware exploration and real-time vision raycasting." />
+    <title>SeeLearn — Explorable 3D Engineering Tutor</title>
+    <meta name="description" content="An explorable 3D engineering tutor. Generate interactive hardware assemblies, trace connections, and learn how machines work." />
+    <meta property="og:title" content="SeeLearn — Explorable 3D Engineering Tutor" />
+    <meta property="og:description" content="An explorable 3D engineering tutor. Generate interactive hardware assemblies, trace connections, and learn how machines work." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+      // Restore persisted theme before first paint to avoid flash
+      (function() {
+        var t = localStorage.getItem('sl-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

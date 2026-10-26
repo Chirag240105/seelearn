@@ -17,9 +17,48 @@
       "name": "10-Layer Matte Black PCB Substrate",
       "group": "Board & Interconnects",
       "parts": [
-        { "shape": "box", "size": [5.2, 1.4, 0.05], "position": [0, 0, 0], "material": "pcb_black" },
-        { "shape": "box", "size": [5.1, 0.25, 0.06], "position": [0, -0.65, 0], "material": "gold" },
-        { "shape": "box", "size": [0.15, 0.15, 0.06], "position": [0.35, -0.65, 0], "material": "black_plastic" }
+        {
+          "shape": "box",
+          "size": [
+            5.2,
+            1.4,
+            0.05
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "material": "pcb_black"
+        },
+        {
+          "shape": "box",
+          "size": [
+            5.1,
+            0.25,
+            0.06
+          ],
+          "position": [
+            0,
+            -0.65,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.15,
+            0.15,
+            0.06
+          ],
+          "position": [
+            0.35,
+            -0.65,
+            0
+          ],
+          "material": "black_plastic"
+        }
       ],
       "summary": "High-Tg 10-layer FR-4 circuit board engineered with matched-length differential trace pairs for 6400 MT/s signal integrity.",
       "howItWorks": "Interconnects all DRAM chips, the PMIC, and the SPD hub to the 288-pin gold edge connector with strict impedance matching (40 ohm single-ended, 80 ohm differential).",
@@ -30,21 +69,129 @@
         "10-layer stackup with dedicated ground reference planes"
       ],
       "confidence": "high",
-      "explode": [0, 0, 0]
+      "explode": [
+        0,
+        0,
+        0
+      ]
     },
     {
       "id": "dram_chips",
       "name": "8x DDR5 DRAM Silicon Packages (16GB)",
       "group": "Silicon & Logic",
       "parts": [
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [-1.9, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [-1.35, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [-0.8, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [-0.25, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [0.45, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [1.0, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [1.55, 0.05, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.42, 0.55, 0.04], "position": [2.1, 0.05, 0.06], "material": "silicon_die" }
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            -1.9,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            -1.35,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            -0.8,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            -0.25,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            0.45,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            1.0,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            1.55,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.42,
+            0.55,
+            0.04
+          ],
+          "position": [
+            2.1,
+            0.05,
+            0.06
+          ],
+          "material": "silicon_die"
+        }
       ],
       "summary": "Array of 16Gb high-density DRAM dies featuring integrated On-Die Error Correction Code (ODECC).",
       "howItWorks": "Stores binary bits in microscopic capacitor-transistor memory cells, refreshed dynamically every 32 milliseconds.",
@@ -55,16 +202,59 @@
         "On-Die ECC corrects single-bit errors inside the silicon array"
       ],
       "confidence": "high",
-      "explode": [0, 0, 0.5]
+      "explode": [
+        0,
+        0,
+        0.5
+      ]
     },
     {
       "id": "pmic_chip",
       "name": "On-Module Power Management IC (PMIC)",
       "group": "Silicon & Logic",
       "parts": [
-        { "shape": "box", "size": [0.3, 0.3, 0.04], "position": [0.1, 0.42, 0.06], "material": "silicon_die" },
-        { "shape": "box", "size": [0.12, 0.12, 0.05], "position": [-0.15, 0.42, 0.06], "material": "copper" },
-        { "shape": "box", "size": [0.12, 0.12, 0.05], "position": [0.35, 0.42, 0.06], "material": "copper" }
+        {
+          "shape": "box",
+          "size": [
+            0.3,
+            0.3,
+            0.04
+          ],
+          "position": [
+            0.1,
+            0.42,
+            0.06
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.12,
+            0.12,
+            0.05
+          ],
+          "position": [
+            -0.15,
+            0.42,
+            0.06
+          ],
+          "material": "copper"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.12,
+            0.12,
+            0.05
+          ],
+          "position": [
+            0.35,
+            0.42,
+            0.06
+          ],
+          "material": "copper"
+        }
       ],
       "summary": "Dedicated switched-mode power regulator managing 1.1V VDD, VDDQ, and 1.8V VPP voltage domains directly on the DIMM.",
       "howItWorks": "Accepts bulk 5V input from the motherboard and uses integrated high-efficiency buck converters to deliver tightly regulated sub-rails directly to the DRAM dies.",
@@ -75,14 +265,31 @@
         "I2C / I3C telemetry bus for voltage and current monitoring"
       ],
       "confidence": "high",
-      "explode": [0, 0.3, 0.6]
+      "explode": [
+        0,
+        0.3,
+        0.6
+      ]
     },
     {
       "id": "spd_hub",
       "name": "SPD Hub & Temperature Sensor",
       "group": "Silicon & Logic",
       "parts": [
-        { "shape": "box", "size": [0.2, 0.2, 0.03], "position": [0.1, 0.18, 0.06], "material": "silicon_die" }
+        {
+          "shape": "box",
+          "size": [
+            0.2,
+            0.2,
+            0.03
+          ],
+          "position": [
+            0.1,
+            0.18,
+            0.06
+          ],
+          "material": "silicon_die"
+        }
       ],
       "summary": "Serial Presence Detect EEPROM integrating thermal telemetry sensors and I3C bus interface.",
       "howItWorks": "Stores JEDEC timing tables and Intel XMP 3.0 / AMD EXPO profiles, communicating memory parameters to the motherboard BIOS upon boot.",
@@ -93,16 +300,59 @@
         "Fast 12.5 MHz I3C bus protocol"
       ],
       "confidence": "high",
-      "explode": [0, 0.1, 0.6]
+      "explode": [
+        0,
+        0.1,
+        0.6
+      ]
     },
     {
       "id": "heat_spreader",
       "name": "Anodized Aluminum Heat Spreader",
       "group": "Thermal Management",
       "parts": [
-        { "shape": "box", "size": [5.25, 1.45, 0.08], "position": [0, 0.1, 0.14], "material": "aluminum_heatsink" },
-        { "shape": "box", "size": [5.25, 1.45, 0.08], "position": [0, 0.1, -0.14], "material": "aluminum_heatsink" },
-        { "shape": "box", "size": [5.1, 0.12, 0.04], "position": [0, 0.6, 0.17], "material": "polished_metal" }
+        {
+          "shape": "box",
+          "size": [
+            5.25,
+            1.45,
+            0.08
+          ],
+          "position": [
+            0,
+            0.1,
+            0.14
+          ],
+          "material": "aluminum_heatsink"
+        },
+        {
+          "shape": "box",
+          "size": [
+            5.25,
+            1.45,
+            0.08
+          ],
+          "position": [
+            0,
+            0.1,
+            -0.14
+          ],
+          "material": "aluminum_heatsink"
+        },
+        {
+          "shape": "box",
+          "size": [
+            5.1,
+            0.12,
+            0.04
+          ],
+          "position": [
+            0,
+            0.6,
+            0.17
+          ],
+          "material": "polished_metal"
+        }
       ],
       "summary": "Dual-sided extruded 6063 aluminum heat plates with thermally conductive silicone adhesive tape.",
       "howItWorks": "Conducts thermal energy generated by the DRAM chips and PMIC across a large aluminum surface area, cooled by chassis case airflow.",
@@ -113,18 +363,83 @@
         "Matte anodized black finish with laser-etched accents"
       ],
       "confidence": "high",
-      "explode": [0, 0, 0.9]
+      "explode": [
+        0,
+        0,
+        0.9
+      ]
     },
     {
       "id": "rgb_diffuser",
       "name": "RGB Light Diffuser Bar & Addressable LEDs",
       "group": "Interface & Aesthetics",
       "parts": [
-        { "shape": "box", "size": [5.3, 0.28, 0.22], "position": [0, 0.9, 0], "material": "smoked_glass" },
-        { "shape": "cylinder", "size": [0.03, 0.06], "position": [-1.8, 0.85, 0], "material": "led_emissive" },
-        { "shape": "cylinder", "size": [0.03, 0.06], "position": [-0.6, 0.85, 0], "material": "led_emissive" },
-        { "shape": "cylinder", "size": [0.03, 0.06], "position": [0.6, 0.85, 0], "material": "led_emissive" },
-        { "shape": "cylinder", "size": [0.03, 0.06], "position": [1.8, 0.85, 0], "material": "led_emissive" }
+        {
+          "shape": "box",
+          "size": [
+            5.3,
+            0.28,
+            0.22
+          ],
+          "position": [
+            0,
+            0.84,
+            0
+          ],
+          "material": "smoked_glass"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.06
+          ],
+          "position": [
+            -1.8,
+            0.85,
+            0
+          ],
+          "material": "led_emissive"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.06
+          ],
+          "position": [
+            -0.6,
+            0.85,
+            0
+          ],
+          "material": "led_emissive"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.06
+          ],
+          "position": [
+            0.6,
+            0.85,
+            0
+          ],
+          "material": "led_emissive"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            0.06
+          ],
+          "position": [
+            1.8,
+            0.85,
+            0
+          ],
+          "material": "led_emissive"
+        }
       ],
       "summary": "Frosted acrylic light guide illuminated by five high-brightness addressable RGB LEDs.",
       "howItWorks": "Internal total reflection diffuses discrete point-source LED photons into a smooth, even light gradient along the top spine of the memory stick.",
@@ -135,7 +450,11 @@
         "Controlled via SMBus / SPD hub microcontroller"
       ],
       "confidence": "high",
-      "explode": [0, 0.8, 0]
+      "explode": [
+        0,
+        0.8,
+        0
+      ]
     }
   ],
   "connections": [
@@ -191,18 +510,12 @@
   ],
   "mechanisms": [
     {
-      "id": "data_burst",
-      "name": "6400 MT/s Dual-Channel Data Stream",
-      "type": "pulse_flow",
-      "targets": ["dram_chips", "pcb_substrate"],
-      "speed": 1.8,
-      "explanation": "Visualizes bidirectional burst transfer of 32-byte cache lines between DRAM silicon cells and CPU memory controller."
-    },
-    {
       "id": "rgb_glow",
       "name": "ARGB Diffuser Illumination",
       "type": "blink",
-      "targets": ["rgb_diffuser"],
+      "targets": [
+        "rgb_diffuser"
+      ],
       "speed": 0.8,
       "explanation": "Smooth breathing illumination cycling across the top frosted acrylic light bar."
     }
@@ -210,22 +523,32 @@
   "assemblySteps": [
     {
       "order": 1,
-      "componentIds": ["pcb_substrate"],
+      "componentIds": [
+        "pcb_substrate"
+      ],
       "instruction": "Fabricate 10-layer FR-4 circuit board and apply immersion gold surface finish to connector fingers."
     },
     {
       "order": 2,
-      "componentIds": ["dram_chips", "pmic_chip", "spd_hub"],
+      "componentIds": [
+        "dram_chips",
+        "pmic_chip",
+        "spd_hub"
+      ],
       "instruction": "Dispense solder paste via stencil, place BGA DRAM packages, PMIC, and SPD hub, and pass through reflow oven."
     },
     {
       "order": 3,
-      "componentIds": ["rgb_diffuser"],
+      "componentIds": [
+        "rgb_diffuser"
+      ],
       "instruction": "Surface mount RGB LEDs on top PCB edge and snap acrylic diffuser bar into locator brackets."
     },
     {
       "order": 4,
-      "componentIds": ["heat_spreader"],
+      "componentIds": [
+        "heat_spreader"
+      ],
       "instruction": "Apply thermal pads over DRAM dies and PMIC, press dual aluminum heat spreaders together, and crimp locking clips."
     }
   ],
@@ -234,7 +557,9 @@
       "id": "exp_pmic_failure",
       "title": "PMIC Overcurrent Shutdown",
       "action": "disable",
-      "targets": ["pmic_chip"],
+      "targets": [
+        "pmic_chip"
+      ],
       "consequence": "Instant loss of 1.1V VDD/VDDQ rails; system crashes with immediate memory parity kernel panic.",
       "explanation": "Because DDR5 regulates memory voltage directly on the module, any PMIC protection trip cuts power to all 8 DRAM dies instantly, corrupting in-flight RAM data and causing the host processor to halt."
     },
@@ -242,7 +567,9 @@
       "id": "exp_thermal_spreader_removed",
       "title": "Remove Heat Spreader under Heavy Load",
       "action": "remove",
-      "targets": ["heat_spreader"],
+      "targets": [
+        "heat_spreader"
+      ],
       "consequence": "DRAM temperatures exceed 85°C, triggering 2x refresh rate throttling and lowering effective memory bandwidth.",
       "explanation": "DRAM capacitors leak charge exponentially faster as temperature increases. Past 85°C, the controller must double refresh cycles (tREFI drops from 7.8µs to 3.9µs), occupying the data bus and degrading game/application throughput."
     }

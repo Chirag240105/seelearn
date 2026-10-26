@@ -1,0 +1,6 @@
+opencv-python==5.0.0.93
+mediapipe==0.10.9
+protobuf==4.25.3
+numpy==2.4.6
+websockets==17.1
+matplotlib==3.10.9

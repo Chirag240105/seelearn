@@ -1,0 +1,153 @@
+/* ============================================================
+   SeeLearn Design Tokens
+   A calm, professional educational product design system.
+   ============================================================ */
+
+/* ---------- Color Palette ---------- */
+:root {
+  /* --- Neutral Slate Surfaces (dark theme – default) --- */
+  --sl-bg-base:       #0f1117;
+  --sl-bg-surface:    #161a22;
+  --sl-bg-raised:     #1c2028;
+  --sl-bg-overlay:    #232830;
+  --sl-bg-input:      #1c2028;
+  --sl-border:        #2a2f3a;
+  --sl-border-subtle: #232830;
+
+  /* --- Text --- */
+  --sl-text-primary:   #e8ecf1;
+  --sl-text-secondary: #9ba3af;
+  --sl-text-muted:     #6b7280;
+  --sl-text-inverse:   #0f1117;
+
+  /* --- Accent: Blue --- */
+  --sl-accent:           #3B82F6;
+  --sl-accent-hover:     #60A5FA;
+  --sl-accent-muted:     rgba(59, 130, 246, 0.12);
+  --sl-accent-text:      #93C5FD;
+
+  /* --- Semantic --- */
+  --sl-success:          #22C55E;
+  --sl-success-muted:    rgba(34, 197, 94, 0.12);
+  --sl-warning:          #F59E0B;
+  --sl-warning-muted:    rgba(245, 158, 11, 0.12);
+  --sl-danger:           #EF4444;
+  --sl-danger-muted:     rgba(239, 68, 68, 0.12);
+
+  /* --- Connection-type Colors --- */
+  --sl-conn-power:       #F59E0B;  /* amber */
+  --sl-conn-signal:      #06B6D4;  /* cyan */
+  --sl-conn-data:        #8B5CF6;  /* violet */
+  --sl-conn-mechanical:  #6488A6;  /* slate-blue */
+  --sl-conn-thermal:     #F97316;  /* orange-red */
+
+  /* --- Connection-type Muted --- */
+  --sl-conn-power-muted:      rgba(245, 158, 11, 0.12);
+  --sl-conn-signal-muted:     rgba(6, 182, 212, 0.12);
+  --sl-conn-data-muted:       rgba(139, 92, 246, 0.12);
+  --sl-conn-mechanical-muted: rgba(100, 136, 166, 0.12);
+  --sl-conn-thermal-muted:    rgba(249, 115, 22, 0.12);
+
+  /* --- Spacing (8px grid) --- */
+  --sl-space-1:  4px;
+  --sl-space-2:  8px;
+  --sl-space-3:  12px;
+  --sl-space-4:  16px;
+  --sl-space-5:  20px;
+  --sl-space-6:  24px;
+  --sl-space-8:  32px;
+  --sl-space-10: 40px;
+  --sl-space-12: 48px;
+  --sl-space-16: 64px;
+
+  /* --- Type Scale --- */
+  --sl-font-ui:    'Inter', system-ui, -apple-system, sans-serif;
+  --sl-font-mono:  'JetBrains Mono', 'Fira Code', monospace;
+
+  --sl-text-xs:    0.75rem;    /* 12px */
+  --sl-text-sm:    0.8125rem;  /* 13px */
+  --sl-text-base:  0.875rem;   /* 14px */
+  --sl-text-md:    1rem;       /* 16px */
+  --sl-text-lg:    1.125rem;   /* 18px */
+  --sl-text-xl:    1.25rem;    /* 20px */
+  --sl-text-2xl:   1.5rem;     /* 24px */
+  --sl-text-3xl:   1.875rem;   /* 30px */
+  --sl-text-4xl:   2.25rem;    /* 36px */
+
+  --sl-leading-tight: 1.25;
+  --sl-leading-normal: 1.5;
+  --sl-leading-relaxed: 1.625;
+
+  --sl-font-normal:   400;
+  --sl-font-medium:   500;
+  --sl-font-semibold: 600;
+  --sl-font-bold:     700;
+
+  /* --- Radii --- */
+  --sl-radius-sm:  4px;
+  --sl-radius-md:  8px;
+  --sl-radius-lg:  12px;
+  --sl-radius-xl:  16px;
+  --sl-radius-full: 9999px;
+
+  /* --- Shadows --- */
+  --sl-shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.25);
+  --sl-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.3);
+  --sl-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.35);
+  --sl-shadow-xl:  0 16px 48px rgba(0, 0, 0, 0.4);
+
+  /* --- Motion --- */
+  --sl-duration-fast:   150ms;
+  --sl-duration-normal: 200ms;
+  --sl-duration-slow:   250ms;
+  --sl-easing:          cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Viewport Z-index layers --- */
+  --sl-z-base:     1;
+  --sl-z-overlay:  10;
+  --sl-z-panel:    20;
+  --sl-z-topbar:   30;
+  --sl-z-modal:    40;
+  --sl-z-toast:    50;
+}
+
+/* ---------- Light Theme ---------- */
+[data-theme="light"] {
+  --sl-bg-base:       #F8FAFC;
+  --sl-bg-surface:    #FFFFFF;
+  --sl-bg-raised:     #F1F5F9;
+  --sl-bg-overlay:    #E2E8F0;
+  --sl-bg-input:      #FFFFFF;
+  --sl-border:        #CBD5E1;
+  --sl-border-subtle: #E2E8F0;
+
+  --sl-text-primary:   #0F172A;
+  --sl-text-secondary: #475569;
+  --sl-text-muted:     #94A3B8;
+  --sl-text-inverse:   #F8FAFC;
+
+  --sl-accent:        #2563EB;
+  --sl-accent-hover:  #3B82F6;
+  --sl-accent-muted:  rgba(37, 99, 235, 0.08);
+  --sl-accent-text:   #1D4ED8;
+
+  --sl-shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.06);
+  --sl-shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08);
+  --sl-shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.1);
+  --sl-shadow-xl:  0 16px 48px rgba(0, 0, 0, 0.12);
+}
+
+/* ---------- Reduced Motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sl-duration-fast:   0ms;
+    --sl-duration-normal: 0ms;
+    --sl-duration-slow:   0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
