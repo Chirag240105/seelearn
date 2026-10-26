@@ -195,12 +195,12 @@ export class VisionWebSocketClient {
     // 4. Extract Metrics safely
     const rawMetrics = data.metrics || {};
     const metrics: VisionMetrics = {
-      fps: typeof rawMetrics.fps === 'number' && !isNaN(rawMetrics.fps) ? Math.round(rawMetrics.fps) : 60,
-      confidence: typeof rawMetrics.confidence === 'number' && !isNaN(rawMetrics.confidence) ? rawMetrics.confidence : 0.95,
-      jitterPx: typeof rawMetrics.jitterPx === 'number' && !isNaN(rawMetrics.jitterPx) ? rawMetrics.jitterPx : 1.2,
+      fps: typeof rawMetrics.fps === 'number' && !isNaN(rawMetrics.fps) ? Math.round(rawMetrics.fps) : 0,
+      confidence: typeof rawMetrics.confidence === 'number' && !isNaN(rawMetrics.confidence) ? rawMetrics.confidence : 0,
+      jitterPx: typeof rawMetrics.jitterPx === 'number' && !isNaN(rawMetrics.jitterPx) ? rawMetrics.jitterPx : 0,
       lossEvents: typeof rawMetrics.lossEvents === 'number' && !isNaN(rawMetrics.lossEvents) ? rawMetrics.lossEvents : 0,
-      gestureAccuracy: typeof rawMetrics.gestureAccuracy === 'number' ? rawMetrics.gestureAccuracy : 98.4,
-      claheEnabled: Boolean(rawMetrics.claheEnabled ?? true),
+      gestureAccuracy: typeof rawMetrics.gestureAccuracy === 'number' ? rawMetrics.gestureAccuracy : undefined,
+      claheEnabled: typeof rawMetrics.claheEnabled === 'boolean' ? rawMetrics.claheEnabled : undefined,
       filterMode: rawMetrics.filterMode || 'kalman',
     };
 

@@ -141,7 +141,11 @@ const SceneComponentNode: React.FC<{
   // Check if component is targeted by an active mechanism
   const activeMechanism = useMemo(() => {
     if (mode !== 'operate' && mode !== 'experiment') return null;
-    return (spec.mechanisms || []).find((m) => m.targets.includes(component.id));
+    return (spec.mechanisms || []).find(
+      (mechanism) =>
+        ['spin', 'oscillate', 'blink'].includes(mechanism.type) &&
+        mechanism.targets.includes(component.id)
+    );
   }, [spec.mechanisms, component.id, mode]);
 
   // Check experiment actions
@@ -331,7 +335,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
     <div className="relative w-full h-full select-none">
       <Canvas
         camera={{ position: [4, 3, 5], fov: 38 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.15 }}
         shadows
         className="w-full h-full"
       >

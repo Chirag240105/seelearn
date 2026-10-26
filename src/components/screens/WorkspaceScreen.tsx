@@ -68,16 +68,10 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
 
   // Vision metrics (measured OpenCV properties)
   const [metrics, setMetrics] = useState<VisionMetrics>({
-    fps: 58.4,
-    confidence: 0.96,
-    jitterPx: 1.4,
+    fps: 0,
+    confidence: 0,
+    jitterPx: 0,
     lossEvents: 0,
-    gestureAccuracy: 98.2,
-    captureLatencyMs: 3.2,
-    preprocessLatencyMs: 2.1,
-    trackingLatencyMs: 4.8,
-    claheEnabled: true,
-    filterMode: 'kalman',
   });
 
   // Modals & Panels
@@ -454,7 +448,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
           <VisionMetricsHUD
             metrics={metrics}
             gestureState={gestureState}
-            cameraActive={cameraActive}
+            cameraActive={isVisionConnected}
             onToggleClahe={() => visionClient.toggleClahe()}
             onStartCalibration={() => setIsCalibrationOpen(true)}
             onToggleDebugView={() => setDebugViewActive(!debugViewActive)}
@@ -469,6 +463,11 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
           onSelectComponent={setSelectedComponentId}
         />
       </div>
+
+      <footer className="min-h-9 shrink-0 border-t border-slate-800 bg-[#0F172A]/90 px-4 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono text-slate-400">
+        <span>AI-generated, conceptual model. Verify critical details.</span>
+        <span>{spec.scaleNote}</span>
+      </footer>
 
       {/* Experiment Modal */}
       {spec.experiments && (
@@ -494,9 +493,10 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
       {/* Vision Calibration Modal */}
       <CalibrationModal
         isOpen={isCalibrationOpen}
+        isConnected={isVisionConnected}
         onClose={() => setIsCalibrationOpen(false)}
         onCalibrationComplete={handleCalibrationComplete}
-        currentCursor={gestureCursor}
+        currentCursor={rawCursor}
       />
 
       {/* Camera Debug Overlay */}

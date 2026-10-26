@@ -247,13 +247,13 @@ export class SeeLearnApiClient {
       const targetUrl = this.endpoint.replace(/\/+$/, '') + '/explain';
       const requestBody = {
         action: 'explain',
-        componentId,
+        componentId: componentId.slice(0, 256),
         question: (question || '').slice(0, 2000),
         specSummary: {
           topic: spec.topic.slice(0, 200),
           title: spec.title.slice(0, 200),
           component: {
-            id: component.id,
+            id: component.id.slice(0, 256),
             name: component.name.slice(0, 200),
             group: component.group.slice(0, 100),
             summary: component.summary.slice(0, 400),
@@ -266,8 +266,8 @@ export class SeeLearnApiClient {
             .filter((c) => c.from === componentId || c.to === componentId)
             .slice(0, 12)
             .map((connection) => ({
-              from: connection.from,
-              to: connection.to,
+              from: connection.from.slice(0, 256),
+              to: connection.to.slice(0, 256),
               type: connection.type,
               label: connection.label.slice(0, 120),
               description: connection.description.slice(0, 160),
@@ -275,7 +275,7 @@ export class SeeLearnApiClient {
         },
       };
       let body = JSON.stringify(requestBody);
-      while (new TextEncoder().encode(body).byteLength >= 20 * 1024) {
+      while (new TextEncoder().encode(body).byteLength >= 20_000) {
         if (requestBody.specSummary.connectedTo.length > 0) {
           requestBody.specSummary.connectedTo.length = Math.floor(requestBody.specSummary.connectedTo.length / 2);
         } else if (requestBody.question.length > 0) {

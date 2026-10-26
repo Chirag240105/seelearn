@@ -3,6 +3,7 @@ import { Target, CheckCircle2, RefreshCw, X } from 'lucide-react';
 
 interface CalibrationModalProps {
   isOpen: boolean;
+  isConnected: boolean;
   onClose: () => void;
   onCalibrationComplete: (samples: [number, number][]) => boolean;
   currentCursor: { x: number; y: number } | null;
@@ -10,6 +11,7 @@ interface CalibrationModalProps {
 
 export const CalibrationModal: React.FC<CalibrationModalProps> = ({
   isOpen,
+  isConnected,
   onClose,
   onCalibrationComplete,
   currentCursor,
@@ -40,6 +42,10 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({
       cornerSampleCountRef.current = 0;
       return;
     }
+    if (!isConnected) {
+      setResult('failure');
+      return;
+    }
 
     const interval = setInterval(() => {
       const cursor = currentCursorRef.current;
@@ -65,7 +71,7 @@ export const CalibrationModal: React.FC<CalibrationModalProps> = ({
     }, 400);
 
     return () => clearInterval(interval);
-  }, [isOpen, currentCornerIndex, onCalibrationComplete]);
+  }, [isOpen, isConnected, currentCornerIndex, onCalibrationComplete]);
 
   if (!isOpen) return null;
 

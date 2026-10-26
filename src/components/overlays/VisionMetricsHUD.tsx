@@ -98,12 +98,16 @@ export const VisionMetricsHUD: React.FC<VisionMetricsHUDProps> = ({
                   setActionError(onToggleClahe() ? null : 'Vision service unavailable.');
                 }}
                 className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-colors ${
-                  metrics.claheEnabled
+                  metrics.claheEnabled === true
                     ? 'bg-sky-500 text-slate-950 font-bold'
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
-                {metrics.claheEnabled ? 'ON (Balanced)' : 'OFF (Raw)'}
+                {metrics.claheEnabled === true
+                  ? 'ON (Balanced)'
+                  : metrics.claheEnabled === false
+                  ? 'OFF (Raw)'
+                  : 'Waiting for service'}
               </button>
             </div>
 
@@ -114,8 +118,9 @@ export const VisionMetricsHUD: React.FC<VisionMetricsHUDProps> = ({
               <span className="text-slate-400 text-[11px]">Hand Range Calibration</span>
               <button
                 type="button"
+                disabled={!cameraActive}
                 onClick={onStartCalibration}
-                className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex items-center gap-1"
+                className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
                 <span>Calibrate</span>

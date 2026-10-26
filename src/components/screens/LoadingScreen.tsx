@@ -45,12 +45,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     if (error || !isGenerating) return;
 
     let timer: ReturnType<typeof setTimeout>;
+    let stepIdx = 0;
     const advanceStep = () => {
-      setCurrentStep((stepIdx) => {
-        const nextStep = stepIdx < steps.length - 1 ? stepIdx + 1 : 0;
-        timer = setTimeout(advanceStep, steps[stepIdx].duration);
-        return nextStep;
-      });
+      stepIdx = (stepIdx + 1) % steps.length;
+      setCurrentStep(stepIdx);
+      timer = setTimeout(advanceStep, steps[stepIdx].duration);
     };
 
     timer = setTimeout(advanceStep, steps[0].duration);

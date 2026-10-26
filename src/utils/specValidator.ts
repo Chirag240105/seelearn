@@ -96,6 +96,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function sanitizeId(rawId: string): string {
+  return rawId.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+}
+
 export function validateAndRepairSceneSpec(raw: any): ValidationResult {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -130,20 +134,29 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
   if (rawComponents.length === 0) {
     errors.push('Scene spec must contain at least one component in "components" array.');
   }
+  const MAX_COMPONENTS = 30;
+  if (rawComponents.length > MAX_COMPONENTS) {
+    warnings.push(`Exceeded cap of ${MAX_COMPONENTS} components; remaining components skipped.`);
+  }
 
   const repairedComponents: SceneComponent[] = [];
   const seenIds = new Set<string>();
+  const idMap = new Map<string, string>();
   let totalPrimitives = 0;
   const MAX_PRIMITIVES = 250;
 
-  for (let i = 0; i < rawComponents.length; i++) {
+  for (let i = 0; i < Math.min(rawComponents.length, MAX_COMPONENTS); i++) {
+    if (totalPrimitives >= MAX_PRIMITIVES) {
+      warnings.push(`Exceeded cap of ${MAX_PRIMITIVES} 3D primitives; remaining components skipped.`);
+      break;
+    }
+
     const rawComp = rawComponents[i];
     if (!rawComp || typeof rawComp !== 'object') continue;
 
     // Component ID sanitization
-    let id = typeof rawComp.id === 'string' && rawComp.id.trim()
-      ? rawComp.id.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_')
-      : `component_${i + 1}`;
+    const normalizedId = typeof rawComp.id === 'string' ? sanitizeId(rawComp.id) : '';
+    let id = normalizedId || `component_${i + 1}`;
 
     if (seenIds.has(id)) {
       warnings.push(`Duplicate component ID "${id}" detected. Appending unique suffix.`);
@@ -154,6 +167,9 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
       id = `${id}_${suffix}`;
     }
     seenIds.add(id);
+    if (normalizedId && !idMap.has(normalizedId)) {
+      idMap.set(normalizedId, id);
+    }
 
     const name = typeof rawComp.name === 'string' && rawComp.name.trim() ? rawComp.name.trim() : `Component ${i + 1}`;
     const group = typeof rawComp.group === 'string' && rawComp.group.trim() ? rawComp.group.trim() : 'Structure';
@@ -232,12 +248,25 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
     }
 
     const confidence = ['high', 'medium', 'low'].includes(rawComp.confidence) ? rawComp.confidence : 'high';
+    if (repairedParts.length === 0) {
+      if (totalPrimitives >= MAX_PRIMITIVES) {
+        warnings.push(`Exceeded cap of ${MAX_PRIMITIVES} 3D primitives; remaining components skipped.`);
+        break;
+      }
+      repairedParts.push({
+        shape: 'box',
+        size: [1, 1, 1],
+        position: [0, 0, 0],
+        material: 'aluminum_heatsink',
+      });
+      totalPrimitives++;
+    }
 
     repairedComponents.push({
       id,
       name,
       group,
-      parts: repairedParts.length > 0 ? repairedParts : [{ shape: 'box', size: [1, 1, 1], position: [0, 0, 0], material: 'aluminum_heatsink' }],
+      parts: repairedParts,
       summary: typeof rawComp.summary === 'string' && rawComp.summary.trim() ? rawComp.summary.trim() : `${name} operational subsystem.`,
       howItWorks: typeof rawComp.howItWorks === 'string' && rawComp.howItWorks.trim() ? rawComp.howItWorks.trim() : `Functions as part of the ${group} group to deliver core capability.`,
       whyNeeded: typeof rawComp.whyNeeded === 'string' && rawComp.whyNeeded.trim() ? rawComp.whyNeeded.trim() : `Critical for structural, electrical, or mechanical operation of the machine.`,
@@ -247,17 +276,23 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
     });
   }
 
+  const resolveComponentId = (rawId: unknown): string | undefined => {
+    if (typeof rawId !== 'string') return undefined;
+    const normalizedId = sanitizeId(rawId);
+    return idMap.get(normalizedId) || (seenIds.has(normalizedId) ? normalizedId : undefined);
+  };
+
   // Validate and drop invalid references in connections
   const rawConnections = Array.isArray(raw.connections) ? raw.connections : [];
   const repairedConnections = [];
 
   for (const c of rawConnections) {
     if (!c || typeof c !== 'object') continue;
-    const from = String(c.from || '').trim().toLowerCase();
-    const to = String(c.to || '').trim().toLowerCase();
+    const from = resolveComponentId(c.from);
+    const to = resolveComponentId(c.to);
 
-    if (!seenIds.has(from) || !seenIds.has(to)) {
-      warnings.push(`Dropped connection between unknown component IDs: "${from}" -> "${to}".`);
+    if (!from || !to) {
+      warnings.push(`Dropped connection between unknown component IDs: "${String(c.from || '')}" -> "${String(c.to || '')}".`);
       continue;
     }
     if (from === to) continue;
@@ -279,7 +314,7 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
   for (const m of rawMechanisms) {
     if (!m || typeof m !== 'object') continue;
     const validTargets = Array.isArray(m.targets)
-      ? m.targets.map(String).filter((t: string) => seenIds.has(t))
+      ? m.targets.map(resolveComponentId).filter((t): t is string => Boolean(t))
       : [];
     if (validTargets.length === 0) continue;
 
@@ -309,7 +344,7 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
     const s = rawSteps[sIdx];
     if (!s || typeof s !== 'object') continue;
     const validCompIds = Array.isArray(s.componentIds)
-      ? s.componentIds.map(String).filter((id: string) => seenIds.has(id))
+      ? s.componentIds.map(resolveComponentId).filter((id): id is string => Boolean(id))
       : [];
 
     repairedSteps.push({
@@ -327,7 +362,7 @@ export function validateAndRepairSceneSpec(raw: any): ValidationResult {
     const exp = rawExperiments[eIdx];
     if (!exp || typeof exp !== 'object') continue;
     const validTargets = Array.isArray(exp.targets)
-      ? exp.targets.map(String).filter((t: string) => seenIds.has(t))
+      ? exp.targets.map(resolveComponentId).filter((t): t is string => Boolean(t))
       : [];
     if (validTargets.length === 0) continue;
 
