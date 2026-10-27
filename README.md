@@ -67,6 +67,15 @@ python vision_service/seelearn_vision.py --record eval/clips/still_01.json --lab
 
 The service requires a usable local camera and OS camera permission. It does not upload camera frames.
 
+### Gestures
+
+| Gesture | State | Action |
+|---|---|---|
+| Open palm | `PALM_ROTATE` | Rotates the 3D model |
+| Fist | `FIST_ZOOM` | Zooms the 3D model |
+| Pinch | `PINCH_START` / `PINCH_HOLD` / `PINCH_RELEASE` | Selects and explains components |
+| Point | `POINTING` | Hovers over parts and buttons |
+
 ### AWS backend
 
 The backend is defined in `aws/` and uses a Lambda Function URL with Amazon Bedrock. Follow `aws/README.md` for prerequisites, model access, and deployment steps. Set the deployed Function URL as `VITE_AWS_API_ENDPOINT` in the browser environment. The backend writes its operational logs through Lambda's CloudWatch integration. Deployment requires AWS account authorization and may incur charges.

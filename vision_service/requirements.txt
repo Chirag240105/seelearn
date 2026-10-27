@@ -1,6 +1,6 @@
 # OpenCV version used: 5.0.0.93 (cv2 reports 5.0.0).
 opencv-python==5.0.0.93
-mediapipe==0.10.9
+mediapipe==0.10.14
 protobuf==4.25.3
-numpy==2.4.6
+numpy<2
 websockets==17.1

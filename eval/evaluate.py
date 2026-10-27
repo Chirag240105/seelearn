@@ -23,7 +23,7 @@ sys.path.insert(0, str(ROOT))
 from vision_service.seelearn_vision import GestureStateMachine, KalmanPointSmoother, MAX_FRAME_WIDTH
 
 PROMPT = 'No recordings found. Record real clips with: python vision_service/seelearn_vision.py --record eval/clips/still_01.json --label "still hand"'
-CLASSES = ("pointing", "pinch", "open_palm", "no_hand")
+CLASSES = ("pointing", "pinch", "open_palm", "fist", "no_hand")
 
 
 def read_records(path):
@@ -45,6 +45,8 @@ def canonical(label, state, detected):
         return "no_hand"
     if "pinch" in word:
         return "pinch"
+    if "fist" in word:
+        return "fist"
     if "palm" in word:
         return "open_palm"
     return "pointing"
@@ -57,6 +59,8 @@ def predicted(state, detected):
         return "pinch"
     if state == "PALM_ROTATE":
         return "open_palm"
+    if state == "FIST_ZOOM":
+        return "fist"
     return "pointing"
 
 
