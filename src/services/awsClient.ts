@@ -27,6 +27,7 @@ export interface GenerateResult {
   refusal?: string;
   error?: string;
   isOffline?: boolean;
+  provider?: string;
 }
 
 export interface ExplainResult {
@@ -175,14 +176,16 @@ export class SeeLearnApiClient {
       }
 
       const data = await response.json();
+      const backendProvider: string | undefined = data.provider;
 
       // Check for refusal response
       if (data.refusal) {
-        return { success: false, refusal: String(data.refusal), isOffline: false };
+        return { success: false, refusal: String(data.refusal), isOffline: false, provider: backendProvider };
       }
 
-      // Validate and repair returned JSON spec
-      const validation = validateAndRepairSceneSpec(data.spec || data);
+      // Accept both response shapes: {spec: ...} or the raw spec itself
+      const rawSpec = data.spec || data;
+      const validation = validateAndRepairSceneSpec(rawSpec);
       if (!validation.valid && validation.errors.length > 0) {
         throw new Error(`Invalid scene spec returned: ${validation.errors.join(', ')}`);
       }
@@ -194,6 +197,7 @@ export class SeeLearnApiClient {
         success: true,
         spec: validation.spec,
         isOffline: false,
+        provider: backendProvider,
       };
     } catch (err: any) {
       if (controller.signal.aborted) return { success: false, error: 'Request cancelled.', isOffline: false };

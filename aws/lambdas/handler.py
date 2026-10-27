@@ -34,7 +34,7 @@ MIN_COMPONENTS = 8
 MAX_PRIMITIVES = 250
 
 REFUSAL = (
-    "I can’t help design weapons, explosives, or devices intended to harm people. "
+    "I can't help design weapons, explosives, or devices intended to harm people. "
     "Please try a safe engineering topic instead."
 )
 HARMFUL_TOPIC = re.compile(
@@ -44,14 +44,27 @@ HARMFUL_TOPIC = re.compile(
     re.IGNORECASE,
 )
 
+RETRYABLE_HTTP_CODES = {429, 500, 503}
+RETRY_DELAY_SECONDS = 2
+
 
 class ValidationError(ValueError):
     """A model response cannot be repaired into the scene schema."""
 
 
+def _clean_env(key, default=""):
+    val = os.environ.get(key, default)
+    if val is None:
+        return default
+    val = str(val).strip()
+    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+        val = val[1:-1].strip()
+    return val
+
+
 def _cors_headers():
     return {
-        "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN", "*") or "*",
+        "Access-Control-Allow-Origin": _clean_env("ALLOWED_ORIGIN", "*") or "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "content-type",
         "Content-Type": "application/json",
@@ -101,17 +114,27 @@ def _read_body(event):
 
 
 def _provider():
-    provider = os.environ.get("MODEL_PROVIDER", "bedrock").strip().lower()
-    return provider if provider in ("bedrock", "gemini") else "bedrock"
+    provider = _clean_env("MODEL_PROVIDER", "gemini").lower()
+    return provider if provider in ("bedrock", "gemini") else "gemini"
 
 
 def _model_id(provider, action):
     if provider == "gemini":
-        return os.environ.get("GEMINI_MODEL", "gemini-2.0-flash").strip()
+        model = _clean_env("GEMINI_MODEL", "")
+        if not model:
+            raise RuntimeError("gemini_model_not_configured")
+        return model
     if action == "explain":
-        return (os.environ.get("EXPLAIN_MODEL_ID", "").strip()
-                or os.environ.get("BEDROCK_MODEL_ID", "").strip())
-    return os.environ.get("BEDROCK_MODEL_ID", "").strip()
+        return (_clean_env("EXPLAIN_MODEL_ID", "")
+                or _clean_env("BEDROCK_MODEL_ID", ""))
+    return _clean_env("BEDROCK_MODEL_ID", "")
+
+
+def _remaining_time_ms(context):
+    """Return remaining Lambda execution time in milliseconds, or a large default."""
+    if context and hasattr(context, "get_remaining_time_in_millis"):
+        return context.get_remaining_time_in_millis()
+    return 150_000
 
 
 def _extract_json_object(text):
@@ -156,7 +179,7 @@ def _extract_json_object(text):
     raise ValueError("model response did not contain a complete JSON object")
 
 
-def call_model(prompt, system_prompt, model_id, max_tokens, temperature):
+def call_model(prompt, system_prompt, model_id, max_tokens, temperature, context=None):
     """Call the configured model provider. Returns response text and token usage."""
     provider = _provider()
     if provider == "bedrock":
@@ -179,39 +202,83 @@ def call_model(prompt, system_prompt, model_id, max_tokens, temperature):
             "outputTokens": int(usage.get("outputTokens", 0) or 0),
         }
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    # Gemini provider
+    api_key = _clean_env("GEMINI_API_KEY", "")
     if not api_key:
         raise RuntimeError("gemini_api_key_not_configured")
     if not model_id:
         raise RuntimeError("gemini_model_not_configured")
-    query = urllib.parse.urlencode({"key": api_key})
-    url = "https://generativelanguage.googleapis.com/v1beta/models/" + urllib.parse.quote(model_id, safe="") + ":generateContent?" + query
+
+    gemini_max_tokens = int(_clean_env("GEMINI_MAX_OUTPUT_TOKENS", "8192") or 8192)
+    clean_model = model_id.removeprefix("models/").strip() if hasattr(model_id, "removeprefix") else (model_id[7:] if model_id.startswith("models/") else model_id).strip()
+    url = "https://generativelanguage.googleapis.com/v1beta/models/" + urllib.parse.quote(clean_model, safe="") + ":generateContent"
+
+    generation_config = {
+        "temperature": temperature if temperature is not None else 0.4,
+        "maxOutputTokens": gemini_max_tokens,
+        "responseMimeType": "application/json",
+    }
+    thinking_budget = _clean_env("GEMINI_THINKING_BUDGET", "")
+    if thinking_budget:
+        try:
+            generation_config["thinkingConfig"] = {"thinkingBudget": int(thinking_budget)}
+        except (ValueError, TypeError):
+            pass
+
     request_payload = {
         "systemInstruction": {"parts": [{"text": system_prompt}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_tokens,
-            "responseMimeType": "application/json",
-        },
+        "generationConfig": generation_config,
     }
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(request_payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=100) as response:
-            result = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError("gemini_http_" + str(exc.code)) from None
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
-        raise RuntimeError("gemini_request_failed") from None
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
+    request_data = json.dumps(request_payload).encode("utf-8")
+
+    remaining_ms = _remaining_time_ms(context)
+    last_error = None
+    for attempt in range(2):
+        if attempt > 0:
+            if remaining_ms < (RETRY_DELAY_SECONDS * 1000 + 10_000):
+                code = getattr(last_error, "code", "timeout")
+                raise RuntimeError("gemini_http_" + str(code)) from None
+            time.sleep(RETRY_DELAY_SECONDS)
+        try:
+            req = urllib.request.Request(url, data=request_data, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=100) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code not in RETRYABLE_HTTP_CODES or attempt > 0:
+                raise RuntimeError("gemini_http_" + str(exc.code)) from None
+            remaining_ms = _remaining_time_ms(context)
+            continue
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            last_error = exc
+            raise RuntimeError("gemini_request_failed") from None
+    else:
+        if last_error:
+            code = getattr(last_error, "code", "unknown")
+            raise RuntimeError("gemini_http_" + str(code)) from None
+        raise RuntimeError("gemini_request_failed")
 
     candidates = result.get("candidates") or []
-    parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+    if not candidates:
+        raise RuntimeError("gemini_empty")
+
+    candidate = candidates[0]
+    finish_reason = candidate.get("finishReason", "")
+    if finish_reason == "MAX_TOKENS":
+        raise RuntimeError("gemini_truncated")
+
+    parts = candidate.get("content", {}).get("parts", [])
     text = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
+    if not text.strip():
+        raise RuntimeError("gemini_empty")
+
     usage = result.get("usageMetadata") or {}
     return text, {
         "inputTokens": int(usage.get("promptTokenCount", 0) or 0),
@@ -219,8 +286,8 @@ def call_model(prompt, system_prompt, model_id, max_tokens, temperature):
     }
 
 
-def _call_and_count(prompt, system_prompt, model_id, max_tokens, temperature, usage_totals):
-    text, usage = call_model(prompt, system_prompt, model_id, max_tokens, temperature)
+def _call_and_count(prompt, system_prompt, model_id, max_tokens, temperature, usage_totals, context=None):
+    text, usage = call_model(prompt, system_prompt, model_id, max_tokens, temperature, context=context)
     usage_totals["inputTokens"] += int(usage.get("inputTokens", 0) or 0)
     usage_totals["outputTokens"] += int(usage.get("outputTokens", 0) or 0)
     return text
@@ -567,29 +634,41 @@ def _scene_system_prompt():
     )
 
 
-def _generate(topic, model_id, usage_totals):
+def _is_repairable(exc):
+    if isinstance(exc, (ValueError, ValidationError)):
+        return True
+    if isinstance(exc, RuntimeError) and str(exc) in ("gemini_empty", "gemini_truncated"):
+        return True
+    return False
+
+
+def _generate(topic, model_id, usage_totals, context=None):
     system_prompt = _scene_system_prompt()
     prompt = "Generate a complete SeeLearn scene for this engineering topic: " + json.dumps(topic, ensure_ascii=False)
+    output = ""
     try:
-        output = _call_and_count(prompt, system_prompt, model_id, 7000, 0.4, usage_totals)
+        output = _call_and_count(prompt, system_prompt, model_id, 7000, 0.4, usage_totals, context=context)
         parsed = _extract_json_object(output)
         spec, _ = validate_and_repair_scene_spec(parsed, topic)
         return spec, False
-    except (ValueError, ValidationError) as first_error:
+    except Exception as first_error:
+        if not _is_repairable(first_error):
+            raise
         repair_prompt = (
             "Repair the previous scene response. Return only one complete JSON scene object. "
-            "Validation/parser error: " + str(first_error) + "\nPrevious response:\n" + (output if "output" in locals() else "")
+            "Validation/parser error: " + str(first_error) + "\nPrevious response:\n" + output
         )
         try:
-            repaired = _call_and_count(repair_prompt, system_prompt, model_id, 7000, 0.4, usage_totals)
+            repaired = _call_and_count(repair_prompt, system_prompt, model_id, 7000, 0.4, usage_totals, context=context)
             parsed = _extract_json_object(repaired)
             spec, _ = validate_and_repair_scene_spec(parsed, topic)
             return spec, True
-        except (ValueError, ValidationError):
-            raise RuntimeError("generation_failed") from None
+        except Exception as second_error:
+            reason = str(second_error) if str(second_error).startswith("gemini_") else str(first_error) if str(first_error).startswith("gemini_") else "generation_failed"
+            raise RuntimeError(reason) from None
 
 
-def _explain(body, model_id, usage_totals):
+def _explain(body, model_id, usage_totals, context=None):
     component_id = body.get("componentId")
     question = body.get("question", "")
     summary = body.get("specSummary")
@@ -614,11 +693,28 @@ def _explain(body, model_id, usage_totals):
         "componentId": component_id,
         "question": question,
     }, ensure_ascii=False, separators=(",", ":"))
-    output = _call_and_count(prompt, system_prompt, model_id, 400, 0.2, usage_totals)
+    output = _call_and_count(prompt, system_prompt, model_id, 400, 0.2, usage_totals, context=context)
     result = _extract_json_object(output)
     if not isinstance(result.get("answer"), str) or not isinstance(result.get("usedGeneralKnowledge"), bool):
         raise RuntimeError("explanation_failed")
     return {"answer": result["answer"], "usedGeneralKnowledge": result["usedGeneralKnowledge"]}
+
+
+def _failure_reason(exc):
+    """Return a short sanitized reason string from an exception, safe for structured logs."""
+    if isinstance(exc, RuntimeError):
+        msg = str(exc)
+        # Never include key material - these are internal reason codes
+        if msg and len(msg) < 80:
+            return msg
+        return type(exc).__name__
+    if isinstance(exc, ValueError):
+        return "validation_error"
+    name = type(exc).__name__
+    code = getattr(exc, "code", None)
+    if code:
+        return f"{name}_{code}"
+    return name
 
 
 def lambda_handler(event, context):
@@ -630,6 +726,7 @@ def lambda_handler(event, context):
     status = 500
     payload = {"error": "internal_error"}
     success = False
+    reason = None
 
     try:
         method = _request_method(event or {})
@@ -639,12 +736,14 @@ def lambda_handler(event, context):
             return _response(status, payload)
         if method != "POST":
             status, payload = 405, {"error": "method_not_allowed"}
+            reason = "method_not_allowed"
             return _response(status, payload)
 
         body = _read_body(event or {})
         action = body.get("action", "unknown")
         if action not in ("generate", "explain"):
             status, payload = 400, {"error": "unsupported_action"}
+            reason = "unsupported_action"
             return _response(status, payload)
         model_id = _model_id(provider, action)
 
@@ -652,21 +751,25 @@ def lambda_handler(event, context):
             topic = body.get("topic")
             if not isinstance(topic, str) or not topic.strip() or len(topic.strip()) > 200:
                 status, payload = 400, {"error": "invalid_topic"}
+                reason = "invalid_topic"
                 return _response(status, payload)
             topic = topic.strip()
             if HARMFUL_TOPIC.search(topic):
                 status, payload, success = 200, {"refusal": REFUSAL}, True
                 return _response(status, payload)
-            spec, repair_attempted = _generate(topic, model_id, usage)
-            payload = {"spec": spec, "repairAttempted": repair_attempted}
+            spec, repair_attempted = _generate(topic, model_id, usage, context=context)
+            payload = {"spec": spec, "repairAttempted": repair_attempted, "provider": provider}
         else:
-            payload = _explain(body, model_id, usage)
+            result = _explain(body, model_id, usage, context=context)
+            payload = {**result, "provider": provider}
         status, success = 200, True
         return _response(status, payload)
-    except ValueError:
+    except ValueError as exc:
         status, payload = 400, {"error": "invalid_request"}
+        reason = _failure_reason(exc)
         return _response(status, payload)
-    except Exception:
+    except Exception as exc:
+        reason = _failure_reason(exc)
         status, payload = (502 if action in ("generate", "explain") else 500), {
             "error": "generation_failed" if action == "generate" else "explanation_failed" if action == "explain" else "internal_error"
         }
@@ -680,6 +783,7 @@ def lambda_handler(event, context):
             "inputTokens": usage["inputTokens"],
             "outputTokens": usage["outputTokens"],
             "success": success,
+            "reason": reason,
             "failure": None if success else payload.get("error", "request_failed"),
         }
         print(json.dumps(record, separators=(",", ":")))

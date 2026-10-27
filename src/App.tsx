@@ -48,8 +48,12 @@ export default function App() {
       if (runId !== generationRunId.current) return;
 
       if (result.success && result.spec) {
-        addRecentModel(result.spec);
-        setActiveSpec(result.spec);
+        const specWithProvider: SceneSpec = {
+          ...result.spec,
+          ...(result.provider ? { provider: result.provider } : {}),
+        };
+        addRecentModel(specWithProvider);
+        setActiveSpec(specWithProvider);
         if (result.isOffline && result.error) {
           setNotice(result.error);
         } else {

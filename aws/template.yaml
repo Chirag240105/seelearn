@@ -3,31 +3,39 @@ Transform: AWS::Serverless-2016-10-31
 Description: SeeLearn scene generation and grounded explanations through a Lambda Function URL.
 
 Parameters:
-  BedrockModelId:
-    Type: String
-    Default: ''
-    Description: Bedrock model ID used for scene generation.
-  ExplainModelId:
-    Type: String
-    Default: ''
-    Description: Optional Bedrock model ID for explanations; defaults to BedrockModelId.
   ModelProvider:
     Type: String
-    Default: bedrock
+    Default: gemini
     AllowedValues: [bedrock, gemini]
+    Description: Model provider (gemini or bedrock).
+  GeminiModel:
+    Type: String
+    Default: ''
+    Description: Gemini model name (required when ModelProvider is gemini).
   GeminiApiKey:
     Type: String
     NoEcho: true
     Default: ''
+    Description: Gemini API key (required when ModelProvider is gemini).
+  BedrockModelId:
+    Type: String
+    Default: ''
+    Description: Bedrock model ID for scene generation (required when ModelProvider is bedrock).
+  ExplainModelId:
+    Type: String
+    Default: ''
+    Description: Optional Bedrock model ID for explanations; defaults to BedrockModelId.
   AllowedOrigin:
     Type: String
     Default: '*'
+    Description: CORS allowed origin for the Function URL.
   BedrockRegion:
     Type: String
     Default: us-east-1
-  GeminiModel:
-    Type: String
-    Default: gemini-2.0-flash
+    Description: AWS region for the Bedrock runtime client.
+
+Conditions:
+  UseBedrock: !Equals [!Ref ModelProvider, bedrock]
 
 Resources:
   SeeLearnFunction:
@@ -36,7 +44,7 @@ Resources:
       CodeUri: lambdas/
       Handler: handler.lambda_handler
       Runtime: python3.12
-      Timeout: 120
+      Timeout: 150
       MemorySize: 512
       ReservedConcurrentExecutions: 5
       Environment:
@@ -49,12 +57,15 @@ Resources:
           GEMINI_MODEL: !Ref GeminiModel
           ALLOWED_ORIGIN: !Ref AllowedOrigin
       Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - bedrock:InvokeModel
-                - bedrock:InvokeModelWithResponseStream
-              Resource: '*'
+        - !If
+          - UseBedrock
+          - Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: '*'
+          - !Ref AWS::NoValue
       FunctionUrlConfig:
         AuthType: NONE
         Cors:

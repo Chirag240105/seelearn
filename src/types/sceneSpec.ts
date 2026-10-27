@@ -112,4 +112,5 @@ export interface SceneSpec {
   mechanisms?: SceneMechanism[];
   assemblySteps?: SceneAssemblyStep[];
   experiments?: SceneExperiment[];
+  provider?: string;
 }
