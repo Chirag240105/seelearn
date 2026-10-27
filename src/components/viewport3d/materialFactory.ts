@@ -16,6 +16,14 @@ let pcbTextureCache: Record<string, { roughness: THREE.CanvasTexture; bump: THRE
 let brushedTextureCache: THREE.CanvasTexture | null = null;
 let microNoiseTextureCache: THREE.CanvasTexture | null = null;
 
+// Material cache to prevent duplicate allocations
+const materialCache = new Map<string, THREE.Material>();
+
+export function clearMaterialCache(): void {
+  materialCache.forEach((mat) => mat.dispose());
+  materialCache.clear();
+}
+
 /**
  * Procedural twill weave texture for carbon fiber
  * Simulates real 2x2 3k carbon fiber twill weave with specular and normal depth
@@ -358,8 +366,14 @@ export function getPresetColor(preset: MaterialPreset): string {
  * Creates high-fidelity MeshPhysicalMaterial tuned per preset with procedural maps
  */
 export function createPartMaterial(preset: MaterialPreset, options: MaterialStyleOptions = {}): THREE.Material {
-  const cfg = PRESET_CONFIGS[preset] || PRESET_CONFIGS.aluminum_heatsink;
   const { viewMode = 'solid', isSelected, isHovered, isDimmed, isEmissiveBlink, isMotorBell } = options;
+
+  const cacheKey = `${preset}_${viewMode}_${Boolean(isSelected)}_${Boolean(isHovered)}_${Boolean(isDimmed)}_${Boolean(isEmissiveBlink)}_${Boolean(isMotorBell)}`;
+  if (materialCache.has(cacheKey)) {
+    return materialCache.get(cacheKey)!;
+  }
+
+  const cfg = PRESET_CONFIGS[preset] || PRESET_CONFIGS.aluminum_heatsink;
 
   let baseColor = new THREE.Color(cfg.color);
 
@@ -431,27 +445,60 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
     if (noiseTex) bumpMap = noiseTex;
   }
 
-  const mat = new THREE.MeshPhysicalMaterial({
-    color: baseColor,
-    roughness: cfg.roughness,
-    metalness: cfg.metalness,
-    transparent,
-    opacity,
-    emissive: emissiveColor,
-    emissiveIntensity,
-    depthWrite: !transparent || opacity >= 0.75,
-    clearcoat: cfg.clearcoat ?? 0,
-    clearcoatRoughness: cfg.clearcoatRoughness ?? 0.15,
-    transmission: cfg.transmission ?? 0,
-    ior: cfg.ior ?? 1.5,
-    thickness: cfg.transmission ? 0.4 : 0,
-    map: map || undefined,
-    normalMap: normalMap || undefined,
-    normalScale: normalMap ? new THREE.Vector2(0.5, 0.5) : undefined,
-    roughnessMap: roughnessMap || undefined,
-    bumpMap: bumpMap || undefined,
-    bumpScale: bumpMap ? 0.02 : undefined,
-  });
+  let mat: THREE.Material;
 
+  if (cfg.transmission && cfg.transmission > 0) {
+    // Glass parts: MeshPhysicalMaterial with transmissionResolution 256
+    mat = new THREE.MeshPhysicalMaterial({
+      color: baseColor,
+      roughness: cfg.roughness,
+      metalness: cfg.metalness,
+      transparent: true,
+      opacity,
+      transmission: cfg.transmission,
+      transmissionResolution: 256,
+      ior: cfg.ior ?? 1.5,
+      thickness: 0.4,
+      depthWrite: !transparent || opacity >= 0.75,
+      map: map || undefined,
+    });
+  } else if (preset === 'carbon_fiber') {
+    // Carbon fiber: low clearcoat
+    mat = new THREE.MeshPhysicalMaterial({
+      color: baseColor,
+      roughness: cfg.roughness,
+      metalness: cfg.metalness,
+      transparent,
+      opacity,
+      emissive: emissiveColor,
+      emissiveIntensity,
+      depthWrite: !transparent || opacity >= 0.75,
+      clearcoat: 0.4,
+      clearcoatRoughness: 0.25,
+      map: map || undefined,
+      normalMap: normalMap || undefined,
+      normalScale: normalMap ? new THREE.Vector2(0.4, 0.4) : undefined,
+    });
+  } else {
+    // Standard high-performance PBR material for all other components
+    mat = new THREE.MeshStandardMaterial({
+      color: baseColor,
+      roughness: cfg.roughness,
+      metalness: cfg.metalness,
+      transparent,
+      opacity,
+      emissive: emissiveColor,
+      emissiveIntensity,
+      depthWrite: !transparent || opacity >= 0.75,
+      map: map || undefined,
+      normalMap: normalMap || undefined,
+      normalScale: normalMap ? new THREE.Vector2(0.4, 0.4) : undefined,
+      roughnessMap: roughnessMap || undefined,
+      bumpMap: bumpMap || undefined,
+      bumpScale: bumpMap ? 0.02 : undefined,
+    });
+  }
+
+  materialCache.set(cacheKey, mat);
   return mat;
 }

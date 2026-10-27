@@ -10,13 +10,13 @@ interface AssemblyStepsPanelProps {
   onClose: () => void;
 }
 
-export const AssemblyStepsPanel: React.FC<AssemblyStepsPanelProps> = ({
+export const AssemblyStepsPanel = React.memo<AssemblyStepsPanelProps>(function AssemblyStepsPanel({
   isOpen,
   steps,
   currentStepIndex,
   onSelectStepIndex,
   onClose,
-}) => {
+}) {
   useEffect(() => {
     if (!isOpen) return;
     const close = (event: KeyboardEvent) => {
@@ -32,7 +32,7 @@ export const AssemblyStepsPanel: React.FC<AssemblyStepsPanelProps> = ({
 
   return (
     <div
-      className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 max-w-2xl w-[calc(100%-2rem)] rounded-2xl shadow-2xl border backdrop-blur-xl select-none overflow-hidden transition-all"
+      className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 max-w-2xl w-[calc(100%-2rem)] rounded-2xl shadow-2xl border select-none overflow-hidden transition-all"
       style={{
         backgroundColor: 'var(--sl-bg-surface)',
         borderColor: 'var(--sl-border)',
@@ -135,4 +135,4 @@ export const AssemblyStepsPanel: React.FC<AssemblyStepsPanelProps> = ({
       </div>
     </div>
   );
-};
+});

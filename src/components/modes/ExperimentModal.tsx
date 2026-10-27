@@ -9,12 +9,12 @@ interface ExperimentModalProps {
   onApplyExperiment: (exp: SceneExperiment | null) => void;
 }
 
-export const ExperimentModal: React.FC<ExperimentModalProps> = ({
+export const ExperimentModal = React.memo<ExperimentModalProps>(function ExperimentModal({
   isOpen,
   experiments,
   onClose,
   onApplyExperiment,
-}) => {
+}) {
   const [selectedExpIndex, setSelectedExpIndex] = useState(0);
   const [isSimulated, setIsSimulated] = useState(false);
 
@@ -215,4 +215,4 @@ export const ExperimentModal: React.FC<ExperimentModalProps> = ({
       </div>
     </div>
   );
-};
+});

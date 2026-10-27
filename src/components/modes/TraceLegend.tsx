@@ -9,12 +9,12 @@ interface TraceLegendProps {
   onClose: () => void;
 }
 
-export const TraceLegend: React.FC<TraceLegendProps> = ({
+export const TraceLegend = React.memo<TraceLegendProps>(function TraceLegend({
   activeFilter,
   onSelectFilter,
   counts,
   onClose,
-}) => {
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export const TraceLegend: React.FC<TraceLegendProps> = ({
 
   return (
     <div
-      className="absolute bottom-20 left-4 z-20 rounded-xl border p-3 shadow-xl select-none w-72 text-xs backdrop-blur-xl transition-all"
+      className="absolute bottom-20 left-4 z-20 rounded-xl border p-3 shadow-xl select-none w-72 text-xs transition-all"
       style={{
         backgroundColor: 'var(--sl-bg-surface)',
         borderColor: 'var(--sl-border)',
@@ -143,4 +143,4 @@ export const TraceLegend: React.FC<TraceLegendProps> = ({
       )}
     </div>
   );
-};
+});

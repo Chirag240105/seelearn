@@ -1,4 +1,5 @@
 import { HandTrackingPacket, VisionServiceState } from '../types/vision';
+import { gestureStore } from './gestureStore';
 
 type PacketCallback = (packet: HandTrackingPacket) => void;
 type StatusCallback = (isConnected: boolean, statusMessage: string) => void;
@@ -200,9 +201,10 @@ export class VisionWebSocketClient {
       };
       this.hasDetectedHand = packet.detected;
       this.updateStatus();
+      gestureStore.updatePacket(packet);
       this.packetListeners.forEach((listener) => listener(packet));
     } catch (error) {
-      console.warn('[VisionClient] Received malformed message:', error);
+      // Avoid console spam in hot path
     }
   }
 

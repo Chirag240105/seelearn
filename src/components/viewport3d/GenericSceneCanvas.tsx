@@ -16,11 +16,20 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 import { SceneComponent, SceneExperiment, ScenePart, SceneSpec, ConnectionType } from '../../types/sceneSpec';
 import { GestureState } from '../../types/vision';
 import { ProceduralPartMesh } from './ProceduralPartMesh';
 import { SceneConnectionPipes } from './SceneConnectionPipes';
 import { perfStore } from '../../services/perfStore';
+import { gestureStore } from '../../services/gestureStore';
+
+// Extend Three.js prototype once for BVH accelerated raycasting
+if (!(THREE.BufferGeometry.prototype as any).computeBoundsTree) {
+  (THREE.BufferGeometry.prototype as any).computeBoundsTree = computeBoundsTree;
+  (THREE.BufferGeometry.prototype as any).disposeBoundsTree = disposeBoundsTree;
+  THREE.Mesh.prototype.raycast = acceleratedRaycast;
+}
 
 const PerfMonitorBridge: React.FC = () => {
   const { gl } = useThree();
@@ -181,29 +190,28 @@ const SmoothCameraController: React.FC<{
   return null;
 };
 
-const GestureOrbitController: React.FC<{
-  gestureCursor?: { x: number; y: number } | null;
-  rotateMode?: boolean;
-}> = ({ gestureCursor, rotateMode }) => {
-  const { controls } = useThree();
+const GestureOrbitController: React.FC = () => {
+  const { controls, invalidate } = useThree();
   const previousCursor = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => {
-    if (!rotateMode || !gestureCursor) {
-      previousCursor.current = gestureCursor || null;
+  useFrame(() => {
+    const { rotateMode, cursor, detected, cameraOn } = gestureStore;
+    if (!rotateMode || !cursor || !detected || !cameraOn) {
+      previousCursor.current = cursor || null;
       return;
     }
     const previous = previousCursor.current;
-    previousCursor.current = gestureCursor;
+    previousCursor.current = cursor;
     if (!previous || !controls) return;
     const orbit = controls as any;
     if (!orbit.rotateLeft || !orbit.rotateUp || !orbit.update) return;
 
     window.dispatchEvent(new Event('viewer-interaction'));
-    orbit.rotateLeft((gestureCursor.x - previous.x) * Math.PI);
-    orbit.rotateUp((gestureCursor.y - previous.y) * Math.PI);
+    orbit.rotateLeft((cursor.x - previous.x) * Math.PI);
+    orbit.rotateUp((cursor.y - previous.y) * Math.PI);
     orbit.update();
-  }, [controls, gestureCursor, rotateMode]);
+    invalidate();
+  });
 
   return null;
 };
@@ -553,39 +561,70 @@ const SceneComponentNode: React.FC<{
 };
 
 const VisionRaycastTracker: React.FC<{
-  gestureCursor?: { x: number; y: number } | null;
-  gestureState?: GestureState;
-  detected?: boolean;
-  onHover: (id: string | null) => void;
+  spec: SceneSpec;
   onSelect: (id: string) => void;
-}> = ({ gestureCursor, gestureState, detected, onHover, onSelect }) => {
-  const { camera, scene } = useThree();
+}> = ({ spec, onSelect }) => {
+  const { camera, scene, invalidate } = useThree();
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const tempVec2 = useMemo(() => new THREE.Vector2(), []);
+  const lastRaycastTime = useRef(0);
+  const lastCursorX = useRef(0);
+  const lastCursorY = useRef(0);
   const previousState = useRef<GestureState>('IDLE');
   const pinchTarget = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!detected || !gestureCursor) {
-      onHover(null);
+  useFrame(() => {
+    const { cursor, detected, cameraOn, gestureState } = gestureStore;
+    if (!detected || !cameraOn || !cursor) {
+      if (gestureStore.hoveredComponentId !== null) {
+        gestureStore.setHoveredComponent(null, null);
+        invalidate();
+      }
       pinchTarget.current = null;
       previousState.current = 'IDLE';
       return;
     }
-    raycaster.setFromCamera(new THREE.Vector2(gestureCursor.x * 2 - 1, -(gestureCursor.y * 2 - 1)), camera);
+
+    const now = performance.now();
+    const dx = cursor.x - lastCursorX.current;
+    const dy = cursor.y - lastCursorY.current;
+    const distSq = dx * dx + dy * dy;
+
+    // Throttle to 30 Hz (33ms) and distance threshold
+    if (now - lastRaycastTime.current < 33 && distSq < 0.00002) {
+      return;
+    }
+
+    lastRaycastTime.current = now;
+    lastCursorX.current = cursor.x;
+    lastCursorY.current = cursor.y;
+
+    tempVec2.set(cursor.x * 2 - 1, -(cursor.y * 2 - 1));
+    raycaster.setFromCamera(tempVec2, camera);
+
     const intersections = raycaster.intersectObjects(scene.children, true);
     let componentId: string | null = null;
+    let componentName: string | null = null;
+
     for (const hit of intersections) {
       let object: THREE.Object3D | null = hit.object;
       while (object && object !== scene) {
         if (object.userData?.componentId) {
           componentId = object.userData.componentId;
+          const found = spec.components.find((c) => c.id === componentId);
+          if (found) componentName = found.name;
           break;
         }
         object = object.parent;
       }
       if (componentId) break;
     }
-    onHover(componentId);
+
+    if (gestureStore.hoveredComponentId !== componentId) {
+      gestureStore.setHoveredComponent(componentId, componentName);
+      invalidate();
+    }
+
     if (gestureState === 'PINCH_START' && previousState.current !== 'PINCH_START') {
       pinchTarget.current = componentId;
     }
@@ -595,8 +634,8 @@ const VisionRaycastTracker: React.FC<{
       }
       pinchTarget.current = null;
     }
-    previousState.current = gestureState || 'IDLE';
-  }, [gestureCursor, gestureState, detected, camera, scene, raycaster, onHover, onSelect]);
+    previousState.current = gestureState;
+  });
 
   return null;
 };
@@ -633,7 +672,42 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
   detected,
   resetToken = 0,
 }) => {
-  const [hoveredComponentId, setHoveredComponentId] = useState<string | null>(null);
+  const [hoveredComponentId, setHoveredComponentId] = useState<string | null>(gestureStore.hoveredComponentId);
+  const [qualityLowered, setQualityLowered] = useState(false);
+  const [dismissQualityAlert, setDismissQualityAlert] = useState(false);
+  const [isTabHidden, setIsTabHidden] = useState(false);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      setIsTabHidden(document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  useEffect(() => {
+    return gestureStore.subscribe(() => {
+      if (gestureStore.hoveredComponentId !== hoveredComponentId) {
+        setHoveredComponentId(gestureStore.hoveredComponentId);
+      }
+    });
+  }, [hoveredComponentId]);
+
+  useEffect(() => {
+    let stableHighFrames = 0;
+    return perfStore.subscribeMetrics((m) => {
+      if (m.fps < 45) {
+        setQualityLowered(true);
+        stableHighFrames = 0;
+      } else if (m.fps >= 55) {
+        stableHighFrames++;
+        if (stableHighFrames >= 150) { // ~5 seconds of stable high fps
+          setQualityLowered(false);
+        }
+      }
+    });
+  }, []);
+
   const sceneBounds = useMemo(() => getSceneBounds(spec), [spec]);
   const sceneCenter = useMemo(() => sceneBounds.getCenter(new THREE.Vector3()), [sceneBounds]);
   const hoveredComponent = spec.components.find((component) => component.id === hoveredComponentId);
@@ -658,11 +732,14 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
     >
       <Canvas
         camera={{ position: [4, 3, 5], fov: 38 }}
+        dpr={[1, 1.5]}
+        frameloop={isTabHidden ? 'never' : (mode === 'operate' || rotateMode ? 'always' : 'demand')}
         gl={{
-          antialias: true,
+          powerPreference: 'high-performance',
+          antialias: false,
           alpha: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0, // Calibrated ACESFilmic exposure 1.0
+          toneMappingExposure: 1.0,
         }}
         shadows
         className="w-full h-full"
@@ -718,7 +795,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
           resetToken={resetToken}
         />
 
-        {/* Soft Contact Shadow below model */}
+        {/* Soft Contact Shadow below model (frames={1} baked for zero ongoing GPU cost) */}
         <ContactShadows
           position={[0, groundY, 0]}
           opacity={0.32}
@@ -726,25 +803,37 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
           blur={2.4}
           far={6}
           resolution={512}
+          frames={1}
         />
 
-        {/* Subtle reflective floor with faint ring */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]}>
-          <planeGeometry args={[30, 30]} />
-          <MeshReflectorMaterial
-            blur={[300, 100]}
-            resolution={512}
-            mirror={0.12}
-            mixBlur={0.8}
-            mixStrength={1.2}
-            roughness={0.7}
-            depthScale={1.2}
-            minDepthThreshold={0.4}
-            maxDepthThreshold={1.4}
-            color="#090d16"
-            metalness={0.15}
-          />
-        </mesh>
+        {/* Floor: MeshReflectorMaterial if FPS >= 55, else high-performance matte standard floor */}
+        {perfStore.currentMetrics.fps >= 55 ? (
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]}>
+            <planeGeometry args={[30, 30]} />
+            <MeshReflectorMaterial
+              blur={[200, 50]}
+              resolution={256}
+              mirror={0.10}
+              mixBlur={0.8}
+              mixStrength={1.0}
+              roughness={0.7}
+              depthScale={1.2}
+              minDepthThreshold={0.4}
+              maxDepthThreshold={1.4}
+              color="#090d16"
+              metalness={0.15}
+            />
+          </mesh>
+        ) : (
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]}>
+            <planeGeometry args={[30, 30]} />
+            <meshStandardMaterial
+              color="#090d16"
+              roughness={0.85}
+              metalness={0.1}
+            />
+          </mesh>
+        )}
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY + 0.005, 0]}>
           <ringGeometry args={[Math.max(2.0, modelScale * 0.35), Math.max(2.015, modelScale * 0.355), 96]} />
@@ -767,7 +856,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
                   isHovered={hoveredComponentId === component.id}
                   hasSelectedOther={Boolean(selectedComponentId && selectedComponentId !== component.id)}
                   activeExperiment={activeExperiment}
-                  onHover={setHoveredComponentId}
+                  onHover={(id) => gestureStore.setHoveredComponent(id)}
                   onSelect={onSelectComponent}
                 />
               ))}
@@ -794,17 +883,12 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
           autoRotate={false}
           autoRotateSpeed={0.4}
           onStart={() => window.dispatchEvent(new Event('viewer-interaction'))}
+          onChange={() => window.dispatchEvent(new Event('viewer-interaction'))}
         />
 
         <IdleAutoRotate enabled={!rotateMode && !selectedComponentId} />
-        <GestureOrbitController gestureCursor={gestureCursor} rotateMode={rotateMode} />
-        <VisionRaycastTracker
-          gestureCursor={gestureCursor}
-          gestureState={gestureState}
-          detected={detected}
-          onHover={setHoveredComponentId}
-          onSelect={onSelectComponent}
-        />
+        <GestureOrbitController />
+        <VisionRaycastTracker spec={spec} onSelect={onSelectComponent} />
 
         <AdaptivePostProcessing hasSelection={Boolean(selectedComponentId)} />
         <PerfMonitorBridge />
@@ -813,7 +897,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
       {/* Top-left scale note badge */}
       <div className="absolute top-3 left-3 pointer-events-none flex flex-col gap-1.5 z-10 max-w-[min(28rem,55vw)]">
         <span
-          className="text-xs px-2.5 py-1.5 rounded-lg border backdrop-blur-md font-medium"
+          className="text-xs px-2.5 py-1.5 rounded-lg border font-medium shadow-md"
           style={{
             backgroundColor: 'var(--sl-bg-surface)',
             borderColor: 'var(--sl-border)',
@@ -824,10 +908,32 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
         </span>
       </div>
 
+      {/* Quality auto-lowered chip */}
+      {qualityLowered && !dismissQualityAlert && (
+        <div
+          className="absolute top-12 left-3 z-10 flex items-center gap-2 px-2.5 py-1 rounded-md text-[11px] font-mono border shadow-md"
+          style={{
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(234, 179, 8, 0.4)',
+            color: '#facc15',
+          }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-ping" />
+          <span>Quality: auto-lowered (optimizing for 60 FPS)</span>
+          <button
+            type="button"
+            onClick={() => setDismissQualityAlert(true)}
+            className="ml-1 text-slate-400 hover:text-white cursor-pointer"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Hover tooltip: soft glow and name */}
       {hoveredComponent && (
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none rounded-full px-4 py-1.5 text-xs font-semibold border backdrop-blur-md shadow-lg transition-all"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none rounded-full px-4 py-1.5 text-xs font-semibold border shadow-lg transition-all"
           style={{
             backgroundColor: 'var(--sl-bg-overlay)',
             borderColor: 'var(--sl-accent)',

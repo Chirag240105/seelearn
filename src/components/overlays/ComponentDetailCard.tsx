@@ -30,13 +30,13 @@ interface QuizQuestion {
   explanation: string;
 }
 
-export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
+export const ComponentDetailCard = React.memo<ComponentDetailCardProps>(function ComponentDetailCard({
   spec,
   selectedComponentId,
   onSelectComponent,
   onInspectConnection,
   onClose,
-}) => {
+}) {
   const [activeTab, setActiveTab] = useState<'overview' | 'how' | 'connections' | 'facts' | 'ask'>('overview');
   const [isSimpleMode, setIsSimpleMode] = useState(true);
   const [followSignalIdx, setFollowSignalIdx] = useState(0);
@@ -803,4 +803,4 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
       </div>
     </div>
   );
-};
+});

@@ -13,6 +13,14 @@ import {
   createScrewHeadGeometry,
 } from './droneGeometryFactory';
 
+// Geometry cache to reuse identical meshes (standoffs, screws, plates, cylinders)
+const geometryCache = new Map<string, THREE.BufferGeometry>();
+
+export function clearGeometryCache(): void {
+  geometryCache.forEach((g) => g.dispose());
+  geometryCache.clear();
+}
+
 interface ProceduralPartMeshProps {
   part: ScenePart;
   options?: MaterialStyleOptions;
@@ -21,13 +29,13 @@ interface ProceduralPartMeshProps {
   onClick?: (e: any) => void;
 }
 
-export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
+export const ProceduralPartMesh = React.memo<ProceduralPartMeshProps>(function ProceduralPartMesh({
   part,
   options = {},
   onPointerOver,
   onPointerOut,
   onClick,
-}) => {
+}) {
   const { shape, size, position, rotation, material, path } = part;
 
   // Classify part type for specialized industrial CAD geometry
@@ -69,15 +77,23 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
     return shape;
   }, [shape, size, material]);
 
-  // Compute primary geometry based on shape & part type
+  // Compute primary geometry based on shape & part type with cache
   const geometry = useMemo(() => {
+    const radialSeg = options.isSelected ? 48 : 24;
+    const geomKey = `${partType}_${(size || []).join('_')}_${radialSeg}_${Boolean(position && position[1] > 0.5)}`;
+    if (geometryCache.has(geomKey)) {
+      return geometryCache.get(geomKey)!;
+    }
+
+    let geom: THREE.BufferGeometry;
     try {
       switch (partType) {
         case 'propeller_blade': {
           const length = size[0] ?? 2.05;
           const thickness = size[1] ?? 0.04;
           const chord = size[2] ?? 0.4;
-          return createPropellerBladeGeometry(length, thickness, chord);
+          geom = createPropellerBladeGeometry(length, thickness, chord);
+          break;
         }
         case 'carbon_arm': {
           const w = size[0] ?? 4.1;
@@ -85,25 +101,29 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
           const d = size[2] ?? 0.7;
           const length = Math.max(w, d);
           const width = Math.min(w, d);
-          return createCarbonArmGeometry(length, h, width);
+          geom = createCarbonArmGeometry(length, h, width);
+          break;
         }
         case 'carbon_plate': {
           const w = size[0] ?? 2.0;
           const h = size[1] ?? 0.12;
           const d = size[2] ?? 4.4;
           const isTopPlate = (position?.[1] ?? 0) > 0.5;
-          return createCarbonPlateGeometry(w, h, d, isTopPlate);
+          geom = createCarbonPlateGeometry(w, h, d, isTopPlate);
+          break;
         }
         case 'motor_bell': {
           const r = size[0] ?? 0.42;
           const h = size[1] ?? 0.5;
-          return createMotorBellGeometry(r, h);
+          geom = createMotorBellGeometry(r, h);
+          break;
         }
         case 'standoff':
         case 'cylinder': {
           const r = size[0] ?? 0.5;
           const h = size[1] ?? 1;
-          return new THREE.CylinderGeometry(r, r, h, 48);
+          geom = new THREE.CylinderGeometry(r, r, h, radialSeg);
+          break;
         }
         case 'roundedBox': {
           const w = size[0] ?? 1;
@@ -111,7 +131,8 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
           const d = size[2] ?? 1;
           const minSide = Math.min(w, h, d);
           const radius = minSide * 0.12;
-          return new RoundedBoxGeometry(w, h, d, 3, radius);
+          geom = new RoundedBoxGeometry(w, h, d, 2, radius);
+          break;
         }
         case 'box': {
           const w = size[0] ?? 1;
@@ -120,59 +141,70 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
           const minSide = Math.min(w, h, d);
           const isFlatPlate = minSide <= 0.15 && Math.max(w, d) > 1.0;
           const radius = isFlatPlate ? minSide * 0.08 : minSide * 0.12;
-          return new RoundedBoxGeometry(w, h, d, 3, Math.max(0.005, radius));
+          geom = new RoundedBoxGeometry(w, h, d, 2, Math.max(0.005, radius));
+          break;
         }
         case 'sphere': {
           const r = size[0] ?? 0.5;
-          return new THREE.SphereGeometry(r, 32, 32);
+          geom = new THREE.SphereGeometry(r, 24, 24);
+          break;
         }
         case 'cone': {
           const r = size[0] ?? 0.5;
           const h = size[1] ?? 1;
-          return new THREE.ConeGeometry(r, h, 36);
+          geom = new THREE.ConeGeometry(r, h, 24);
+          break;
         }
         case 'torus': {
           const r = size[0] ?? 0.5;
           const tube = size[1] ?? 0.08;
-          return new THREE.TorusGeometry(r, tube, 20, 48);
+          geom = new THREE.TorusGeometry(r, tube, 16, 24);
+          break;
         }
         case 'ring': {
           const innerR = size[0] ?? 0.3;
           const outerR = size[1] ?? 0.6;
-          return new THREE.RingGeometry(innerR, outerR, 48);
+          geom = new THREE.RingGeometry(innerR, outerR, 32);
+          break;
         }
         case 'tube': {
           const r = size[0] ?? 0.05;
           if (path && path.length >= 2) {
             const points = path.map((pt) => new THREE.Vector3(pt[0], pt[1], pt[2]));
             const curve = new THREE.CatmullRomCurve3(points);
-            return new THREE.TubeGeometry(curve, 32, r, 12, false);
+            geom = new THREE.TubeGeometry(curve, 24, r, 8, false);
+          } else {
+            geom = new THREE.CylinderGeometry(r, r, 0.5, 16);
           }
-          return new THREE.CylinderGeometry(r, r, 0.5, 24);
+          break;
         }
         default:
-          return new THREE.BoxGeometry(1, 1, 1);
+          geom = new THREE.BoxGeometry(1, 1, 1);
       }
     } catch (e) {
-      console.warn('Error creating geometry for part:', shape, e);
-      return new THREE.BoxGeometry(0.5, 0.5, 0.5);
+      geom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
     }
-  }, [partType, shape, size, position, path]);
+
+    geometryCache.set(geomKey, geom);
+    return geom;
+  }, [partType, shape, size, position, path, options.isSelected]);
 
   // Compute main material
   const meshMaterial = useMemo(() => {
     return createPartMaterial(material, options);
   }, [material, options]);
 
-  // Ancillary materials for realistic detail sub-elements
+  // Ancillary materials for realistic detail sub-elements (only if inspected/hovered)
+  const isInspected = options.isSelected || options.isHovered;
   const detailMaterials = useMemo(() => {
+    if (!isInspected) return null;
     return {
       screw: createPartMaterial('brushed_metal', { ...options, isSelected: false }),
       copper: createPartMaterial('gold', { ...options, isSelected: false }),
       smdChip: createPartMaterial('silicon_die', { ...options, isSelected: false }),
       goldPad: createPartMaterial('gold', { ...options, isSelected: false }),
     };
-  }, [options]);
+  }, [options, isInspected]);
 
   const isXray = options.viewMode === 'xray';
   const edgeColor = options.isSelected
@@ -191,33 +223,32 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
     ? 0.1
     : 0.35;
 
-  // Stator coils and shaft nut for motor bell
+  // Stator coils and shaft nut for motor bell (only rendered if inspected)
   const motorDetails = useMemo(() => {
-    if (partType !== 'motor_bell' || isXray) return null;
+    if (partType !== 'motor_bell' || isXray || !isInspected) return null;
     const r = size[0] ?? 0.42;
     const h = size[1] ?? 0.5;
     const statorGeom = createStatorWindingsGeometry(r, h);
     const hexNutGeom = new THREE.CylinderGeometry(r * 0.32, r * 0.32, h * 0.22, 6);
     return { statorGeom, hexNutGeom, r, h };
-  }, [partType, size, isXray]);
+  }, [partType, size, isXray, isInspected]);
 
-  // Screw heads for standoffs
+  // Screw heads for standoffs (only rendered if inspected)
   const standoffScrews = useMemo(() => {
-    if (partType !== 'standoff' || isXray) return null;
+    if (partType !== 'standoff' || isXray || !isInspected) return null;
     const r = size[0] ?? 0.07;
     const h = size[1] ?? 1.08;
     const screwGeom = createScrewHeadGeometry(r * 1.35, 0.04);
     return { screwGeom, h };
-  }, [partType, size, isXray]);
+  }, [partType, size, isXray, isInspected]);
 
-  // SMD chips for PCBs
+  // SMD chips for PCBs (only rendered if inspected)
   const pcbChips = useMemo(() => {
-    if ((material !== 'pcb_black' && material !== 'pcb_green') || isXray) return null;
+    if ((material !== 'pcb_black' && material !== 'pcb_green') || isXray || !isInspected) return null;
     const w = size[0] ?? 1.2;
     const h = size[1] ?? 0.08;
     const d = size[2] ?? 1.2;
 
-    // Fixed deterministic seed positions for micro SMD components
     const chips = [
       { x: -w * 0.25, z: -d * 0.25, sw: w * 0.18, sd: d * 0.18, sh: 0.03 },
       { x: w * 0.22, z: -d * 0.2, sw: w * 0.15, sd: d * 0.12, sh: 0.025 },
@@ -225,7 +256,7 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
       { x: w * 0.26, z: d * 0.22, sw: w * 0.12, sd: d * 0.2, sh: 0.028 },
     ];
     return { chips, h };
-  }, [material, size, isXray]);
+  }, [material, size, isXray, isInspected]);
 
   return (
     <group position={position} rotation={rotation || [0, 0, 0]}>
@@ -239,17 +270,19 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
         onPointerOut={onPointerOut}
         onClick={onClick}
       >
-        {/* Subtle CAD edges for crisp industrial silhouette */}
-        <Edges
-          threshold={25}
-          color={edgeColor}
-          opacity={edgeOpacity}
-          transparent
-        />
+        {/* Subtle CAD edges only shown in X-ray, on hover, or for selected part */}
+        {(isXray || options.isSelected || options.isHovered) && (
+          <Edges
+            threshold={25}
+            color={edgeColor}
+            opacity={edgeOpacity}
+            transparent
+          />
+        )}
       </mesh>
 
-      {/* Realistic Motor Internals: 12 copper stator coils & top hex shaft nut */}
-      {motorDetails && (
+      {/* Realistic Motor Internals: rendered only when inspected */}
+      {isInspected && motorDetails && detailMaterials && (
         <>
           <mesh
             geometry={motorDetails.statorGeom}
@@ -264,8 +297,8 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
         </>
       )}
 
-      {/* Realistic Standoff Screws on both ends */}
-      {standoffScrews && (
+      {/* Realistic Standoff Screws: rendered only when inspected */}
+      {isInspected && standoffScrews && detailMaterials && (
         <>
           <mesh
             geometry={standoffScrews.screwGeom}
@@ -281,8 +314,8 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
         </>
       )}
 
-      {/* Surface-Mounted Device (SMD) chips on electronics boards */}
-      {pcbChips &&
+      {/* SMD chips on electronics boards: rendered only when inspected */}
+      {isInspected && pcbChips && detailMaterials &&
         pcbChips.chips.map((chip, idx) => (
           <mesh
             key={`smd_${idx}`}
@@ -294,4 +327,4 @@ export const ProceduralPartMesh: React.FC<ProceduralPartMeshProps> = ({
         ))}
     </group>
   );
-};
+});
