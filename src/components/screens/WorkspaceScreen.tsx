@@ -95,6 +95,47 @@ const LiveVisionMetricsChip: React.FC = () => {
   );
 };
 
+const LiveBottomStatusChip: React.FC<{
+  cameraEnabled: boolean;
+  isHandDetected: boolean;
+  gestureState: string;
+}> = ({ cameraEnabled, isHandDetected, gestureState }) => {
+  const fpsRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    return gestureStore.subscribe(() => {
+      if (fpsRef.current) {
+        fpsRef.current.textContent = `${gestureStore.metrics?.fps ?? 30}`;
+      }
+    });
+  }, []);
+
+  return (
+    <div
+      className="absolute bottom-4 right-4 z-20 px-2.5 py-1 rounded-lg border text-xs font-mono flex items-center gap-2 shadow-md"
+      style={{
+        backgroundColor: 'var(--sl-bg-surface)',
+        borderColor: 'var(--sl-border)',
+        color: 'var(--sl-text-secondary)',
+      }}
+    >
+      <span
+        className="w-2 h-2 rounded-full"
+        style={{
+          backgroundColor: cameraEnabled && isHandDetected ? 'var(--sl-success)' : 'var(--sl-text-muted)',
+        }}
+      />
+      {cameraEnabled ? (
+        <span>
+          <span ref={fpsRef}>{gestureStore.metrics?.fps ?? 30}</span> FPS · {gestureState}
+        </span>
+      ) : (
+        <span>Mouse Mode</span>
+      )}
+    </div>
+  );
+};
+
 interface WorkspaceScreenProps {
   spec: SceneSpec;
   onBackToPrompt: () => void;
@@ -1226,22 +1267,11 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
           </div>
 
           {/* Bottom-Right Small Gesture / FPS Chip */}
-          <div
-            className="absolute bottom-4 right-4 z-20 px-2.5 py-1 rounded-lg border text-xs font-mono flex items-center gap-2 shadow-md"
-            style={{
-              backgroundColor: 'var(--sl-bg-surface)',
-              borderColor: 'var(--sl-border)',
-              color: 'var(--sl-text-secondary)',
-            }}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{
-                backgroundColor: cameraEnabled && isHandDetected ? 'var(--sl-success)' : 'var(--sl-text-muted)',
-              }}
-            />
-            <span>{cameraEnabled ? `${metrics.fps} FPS · ${gestureState}` : 'Mouse Mode'}</span>
-          </div>
+          <LiveBottomStatusChip
+            cameraEnabled={cameraEnabled}
+            isHandDetected={isHandDetected}
+            gestureState={gestureState}
+          />
 
           {/* Assembly timeline bottom panel */}
           <AssemblyStepsPanel
