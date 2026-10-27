@@ -48,6 +48,7 @@ import { visionClient } from '../../services/visionClient';
 import { seeLearnApiClient } from '../../services/awsClient';
 import { useTheme } from '../../hooks/useTheme';
 import { getAllSamples, getRecentModels, SampleMeta } from '../../data/samples/samplesIndex';
+import { perfStore } from '../../services/perfStore';
 
 interface WorkspaceScreenProps {
   spec: SceneSpec;
@@ -62,6 +63,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
   onSelectSpec,
   onRegenerate,
 }) => {
+  perfStore.recordReactCommit();
   const { theme, toggleTheme } = useTheme();
 
   // View & Mode State

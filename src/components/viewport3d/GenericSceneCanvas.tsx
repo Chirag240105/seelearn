@@ -20,6 +20,15 @@ import { SceneComponent, SceneExperiment, ScenePart, SceneSpec, ConnectionType }
 import { GestureState } from '../../types/vision';
 import { ProceduralPartMesh } from './ProceduralPartMesh';
 import { SceneConnectionPipes } from './SceneConnectionPipes';
+import { perfStore } from '../../services/perfStore';
+
+const PerfMonitorBridge: React.FC = () => {
+  const { gl } = useThree();
+  useFrame((_, delta) => {
+    perfStore.updateThreeMetrics(gl, delta);
+  });
+  return null;
+};
 
 interface GenericSceneCanvasProps {
   spec: SceneSpec;
@@ -798,6 +807,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
         />
 
         <AdaptivePostProcessing hasSelection={Boolean(selectedComponentId)} />
+        <PerfMonitorBridge />
       </Canvas>
 
       {/* Top-left scale note badge */}

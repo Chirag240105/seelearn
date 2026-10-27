@@ -5,6 +5,7 @@ import { seeLearnApiClient } from './services/awsClient';
 import { PromptScreen } from './components/screens/PromptScreen';
 import { LoadingScreen } from './components/screens/LoadingScreen';
 import { WorkspaceScreen } from './components/screens/WorkspaceScreen';
+import { PerfPanel } from './components/overlays/PerfPanel';
 
 export default function App() {
   const [screen, setScreen] = useState<'prompt' | 'loading' | 'workspace'>('prompt');
@@ -147,6 +148,8 @@ export default function App() {
           )}
         </>
       )}
+
+      <PerfPanel />
     </div>
   );
 }
