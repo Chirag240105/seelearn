@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  HelpCircle,
   Send,
   ChevronRight,
   ShieldCheck,
@@ -10,7 +9,8 @@ import {
   Sparkles,
   BookOpen,
   ArrowRight,
-  RotateCcw,
+  ChevronLeft,
+  Zap,
 } from 'lucide-react';
 import { SceneSpec, SceneComponent, ConfidenceLevel, ConnectionType } from '../../types/sceneSpec';
 import { seeLearnApiClient, ChatHistoryEntry } from '../../services/awsClient';
@@ -38,6 +38,8 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'how' | 'connections' | 'facts' | 'ask'>('overview');
+  const [isSimpleMode, setIsSimpleMode] = useState(true);
+  const [followSignalIdx, setFollowSignalIdx] = useState(0);
   const [chatQuestion, setChatQuestion] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatHistoryEntry[]>([]);
   const [isAnswering, setIsAnswering] = useState(false);
@@ -60,13 +62,14 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
     return spec.components.find((c) => c.id === selectedComponentId) || null;
   }, [spec.components, selectedComponentId]);
 
-  // Reset chat & quiz when selected component changes
+  // Reset chat, quiz, and signal stepper when selected component changes
   useEffect(() => {
     setChatMessages([]);
     setNetworkNotice(null);
     setIsQuizOpen(false);
     setSelectedAnswers({});
     setQuizScore(null);
+    setFollowSignalIdx(0);
   }, [selectedComponentId]);
 
   // Generate 3 multiple-choice questions from the component's spec text (purely offline, zero network needed)
@@ -237,7 +240,7 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
       {/* Header: part name, subsystem chip, confidence badge, Quiz me button, close button */}
       <div className="p-4 border-b shrink-0 space-y-2.5" style={{ borderColor: 'var(--sl-border-subtle)' }}>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span
               className="text-xs font-mono uppercase px-2 py-0.5 rounded border font-medium"
               style={{
@@ -252,6 +255,21 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Simple/Detailed toggle */}
+            <button
+              type="button"
+              onClick={() => setIsSimpleMode((v) => !v)}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border transition cursor-pointer"
+              style={{
+                backgroundColor: isSimpleMode ? 'var(--sl-bg-raised)' : 'var(--sl-accent-muted)',
+                borderColor: 'var(--sl-border)',
+                color: isSimpleMode ? 'var(--sl-text-muted)' : 'var(--sl-accent)',
+              }}
+              title={isSimpleMode ? 'Switch to detailed view' : 'Switch to simple view'}
+            >
+              {isSimpleMode ? 'Simple' : 'Detailed'}
+            </button>
+
             {/* Quiz Me button */}
             <button
               type="button"
@@ -265,7 +283,6 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
               title="Test your knowledge with 3 interactive questions"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Quiz Me</span>
             </button>
 
             {onClose && (
@@ -287,34 +304,24 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
         </div>
 
         <div>
-          <h2 className="text-base font-bold tracking-tight" style={{ color: 'var(--sl-text-primary)' }}>
+          <h2 className="text-sm font-bold tracking-tight" style={{ color: 'var(--sl-text-primary)' }}>
             {selectedComponent.name}
           </h2>
-          {/* Why It Matters Callout */}
-          <div
-            className="mt-2 p-2.5 rounded-lg border text-xs leading-relaxed"
-            style={{
-              backgroundColor: 'var(--sl-bg-raised)',
-              borderColor: 'var(--sl-border-subtle)',
-            }}
-          >
-            <span className="font-semibold block mb-0.5" style={{ color: 'var(--sl-accent)' }}>
-              Why It Matters:
-            </span>
-            <span style={{ color: 'var(--sl-text-secondary)' }}>{selectedComponent.whyNeeded}</span>
-          </div>
+          {/* One-line summary */}
+          <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+            {selectedComponent.summary}
+          </p>
         </div>
 
-        {/* 5 Tabs: Overview, How it works, Connections, Facts, Ask */}
+        {/* Tabs */}
         {!isQuizOpen && (
           <div
-            className="flex items-center gap-1 p-1 rounded-xl border text-xs font-medium overflow-x-auto"
+            className="flex items-center gap-0.5 p-1 rounded-xl border text-xs font-medium overflow-x-auto"
             style={{ backgroundColor: 'var(--sl-bg-base)', borderColor: 'var(--sl-border)' }}
           >
             {[
-              { id: 'overview', label: 'Overview' },
-              { id: 'how', label: 'How it works' },
-              { id: 'connections', label: `Connections (${relatedConnections.length})` },
+              { id: 'overview', label: 'Explain' },
+              { id: 'connections', label: `Signal (${relatedConnections.length})` },
               { id: 'facts', label: 'Facts' },
               { id: 'ask', label: 'Ask' },
             ].map((tab) => (
@@ -464,61 +471,150 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
           </div>
         ) : (
           <>
-            {/* TAB: Overview */}
+            {/* TAB: Explain (merged overview + how it works) */}
             {activeTab === 'overview' && (
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--sl-text-muted)' }}>
-                    Functional Summary
-                  </h4>
-                  <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
-                    {selectedComponent.summary}
-                  </p>
-                </div>
-
-                <div
-                  className="p-3.5 rounded-xl border space-y-1.5"
-                  style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)' }}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wider block" style={{ color: 'var(--sl-text-muted)' }}>
-                    Physical Geometry & Scale
-                  </span>
-                  <div className="text-xs space-y-1" style={{ color: 'var(--sl-text-secondary)' }}>
-                    <div>
-                      Subsystem: <span className="font-medium capitalize" style={{ color: 'var(--sl-text-primary)' }}>{selectedComponent.group}</span>
-                    </div>
-                    <div>
-                      Procedural Parts: <span className="font-mono font-medium" style={{ color: 'var(--sl-text-primary)' }}>{selectedComponent.parts.length} geometry primitives</span>
-                    </div>
-                    <div>
-                      Primary Materials: <span className="font-mono text-xs" style={{ color: 'var(--sl-text-primary)' }}>
-                        {Array.from(new Set(selectedComponent.parts.map((p) => p.material))).join(', ')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: How It Works */}
-            {activeTab === 'how' && (
-              <div className="space-y-4">
-                <div>
+              <div className="space-y-3">
+                {/* What it does */}
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border-subtle)' }}>
                   <h4 className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--sl-text-muted)' }}>
-                    Physical Principles of Operation
+                    What it does
                   </h4>
-                  <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
                     {selectedComponent.howItWorks}
                   </p>
                 </div>
+
+                {/* Why it matters */}
+                <div className="p-3 rounded-lg border" style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border-subtle)' }}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--sl-text-muted)' }}>
+                    Why it matters
+                  </h4>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                    {selectedComponent.whyNeeded}
+                  </p>
+                </div>
+
+                {/* Key facts (hidden in simple mode) */}
+                {!isSimpleMode && selectedComponent.keyFacts && selectedComponent.keyFacts.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--sl-text-muted)' }}>
+                      Key facts
+                    </h4>
+                    <ul className="space-y-1.5">
+                      {selectedComponent.keyFacts.map((fact, idx) => (
+                        <li
+                          key={idx}
+                          className="text-xs p-2 rounded-lg border flex items-start gap-2 leading-relaxed"
+                          style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-secondary)' }}
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: 'var(--sl-accent)' }} />
+                          <span>{fact}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Quick connected-to chips */}
+                {relatedConnections.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--sl-text-muted)' }}>
+                      Connected to
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {relatedConnections.map((conn, idx) => {
+                        const partnerId = conn.from === selectedComponent.id ? conn.to : conn.from;
+                        const partner = spec.components.find((c) => c.id === partnerId);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => onSelectComponent(partnerId)}
+                            className="text-xs px-2 py-1 rounded-full border transition cursor-pointer"
+                            style={{
+                              backgroundColor: 'var(--sl-bg-raised)',
+                              borderColor: getConnectionTypeColor(conn.type),
+                              color: getConnectionTypeColor(conn.type),
+                            }}
+                          >
+                            {partner?.name || partnerId}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* TAB: Connections */}
+            {/* TAB: Signal (Connections + Follow the Signal stepper) */}
             {activeTab === 'connections' && (
               <div className="space-y-3">
+                {/* Follow the Signal helper */}
+                {relatedConnections.length > 0 && (
+                  <div
+                    className="p-3 rounded-xl border space-y-2"
+                    style={{ backgroundColor: 'var(--sl-bg-raised)', borderColor: 'var(--sl-accent)', borderWidth: '1px' }}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--sl-accent)' }}>
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Follow the Signal</span>
+                      <span className="ml-auto font-mono" style={{ color: 'var(--sl-text-muted)' }}>
+                        {followSignalIdx + 1} / {relatedConnections.length}
+                      </span>
+                    </div>
+                    {(() => {
+                      const conn = relatedConnections[followSignalIdx];
+                      const isSource = conn.from === selectedComponent.id;
+                      const partnerId = isSource ? conn.to : conn.from;
+                      const partner = spec.components.find((c) => c.id === partnerId);
+                      return (
+                        <div className="space-y-1.5">
+                          <p className="text-xs leading-relaxed" style={{ color: 'var(--sl-text-secondary)' }}>
+                            <span style={{ color: getConnectionTypeColor(conn.type), fontWeight: 600 }}>
+                              {conn.label}
+                            </span>{' '}
+                            {conn.description || `${isSource ? 'outputs to' : 'receives from'} ${partner?.name || partnerId}.`}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onSelectComponent(partnerId)}
+                              className="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer flex items-center justify-center gap-1"
+                              style={{ backgroundColor: 'var(--sl-accent)', color: '#ffffff', borderColor: 'transparent' }}
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                              Go to {partner?.name || partnerId}
+                            </button>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              disabled={followSignalIdx === 0}
+                              onClick={() => setFollowSignalIdx((i) => Math.max(0, i - 1))}
+                              className="p-1.5 rounded border text-xs cursor-pointer disabled:opacity-30"
+                              style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-muted)' }}
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={followSignalIdx >= relatedConnections.length - 1}
+                              onClick={() => setFollowSignalIdx((i) => Math.min(relatedConnections.length - 1, i + 1))}
+                              className="p-1.5 rounded border text-xs cursor-pointer disabled:opacity-30"
+                              style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-muted)' }}
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 <div className="text-xs" style={{ color: 'var(--sl-text-muted)' }}>
-                  Interconnected subsystem paths for {selectedComponent.name}:
+                  All connections for {selectedComponent.name}:
                 </div>
 
                 {relatedConnections.length === 0 ? (
@@ -538,13 +634,14 @@ export const ComponentDetailCard: React.FC<ComponentDetailCardProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => {
+                            setFollowSignalIdx(idx);
                             onSelectComponent(partnerId);
                             onInspectConnection?.(conn.from, conn.to);
                           }}
                           className="w-full p-3 rounded-xl border text-left text-xs transition cursor-pointer flex items-center justify-between group"
                           style={{
-                            backgroundColor: 'var(--sl-bg-raised)',
-                            borderColor: 'var(--sl-border)',
+                            backgroundColor: followSignalIdx === idx ? 'var(--sl-accent-muted)' : 'var(--sl-bg-raised)',
+                            borderColor: followSignalIdx === idx ? 'var(--sl-accent)' : 'var(--sl-border)',
                           }}
                         >
                           <div className="space-y-1">
