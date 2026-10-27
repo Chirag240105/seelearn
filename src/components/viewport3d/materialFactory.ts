@@ -449,7 +449,7 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
 
   if (cfg.transmission && cfg.transmission > 0) {
     // Glass parts: MeshPhysicalMaterial with transmissionResolution 256
-    mat = new THREE.MeshPhysicalMaterial({
+    const glassParams: THREE.MeshPhysicalMaterialParameters = {
       color: baseColor,
       roughness: cfg.roughness,
       metalness: cfg.metalness,
@@ -460,11 +460,12 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
       ior: cfg.ior ?? 1.5,
       thickness: 0.4,
       depthWrite: !transparent || opacity >= 0.75,
-      map: map || undefined,
-    });
+    };
+    if (map) glassParams.map = map;
+    mat = new THREE.MeshPhysicalMaterial(glassParams);
   } else if (preset === 'carbon_fiber') {
     // Carbon fiber: low clearcoat
-    mat = new THREE.MeshPhysicalMaterial({
+    const carbonParams: THREE.MeshPhysicalMaterialParameters = {
       color: baseColor,
       roughness: cfg.roughness,
       metalness: cfg.metalness,
@@ -475,13 +476,16 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
       depthWrite: !transparent || opacity >= 0.75,
       clearcoat: 0.4,
       clearcoatRoughness: 0.25,
-      map: map || undefined,
-      normalMap: normalMap || undefined,
-      normalScale: normalMap ? new THREE.Vector2(0.4, 0.4) : undefined,
-    });
+    };
+    if (map) carbonParams.map = map;
+    if (normalMap) {
+      carbonParams.normalMap = normalMap;
+      carbonParams.normalScale = new THREE.Vector2(0.4, 0.4);
+    }
+    mat = new THREE.MeshPhysicalMaterial(carbonParams);
   } else {
     // Standard high-performance PBR material for all other components
-    mat = new THREE.MeshStandardMaterial({
+    const stdParams: THREE.MeshStandardMaterialParameters = {
       color: baseColor,
       roughness: cfg.roughness,
       metalness: cfg.metalness,
@@ -490,13 +494,18 @@ export function createPartMaterial(preset: MaterialPreset, options: MaterialStyl
       emissive: emissiveColor,
       emissiveIntensity,
       depthWrite: !transparent || opacity >= 0.75,
-      map: map || undefined,
-      normalMap: normalMap || undefined,
-      normalScale: normalMap ? new THREE.Vector2(0.4, 0.4) : undefined,
-      roughnessMap: roughnessMap || undefined,
-      bumpMap: bumpMap || undefined,
-      bumpScale: bumpMap ? 0.02 : undefined,
-    });
+    };
+    if (map) stdParams.map = map;
+    if (normalMap) {
+      stdParams.normalMap = normalMap;
+      stdParams.normalScale = new THREE.Vector2(0.4, 0.4);
+    }
+    if (roughnessMap) stdParams.roughnessMap = roughnessMap;
+    if (bumpMap) {
+      stdParams.bumpMap = bumpMap;
+      stdParams.bumpScale = 0.02;
+    }
+    mat = new THREE.MeshStandardMaterial(stdParams);
   }
 
   materialCache.set(cacheKey, mat);

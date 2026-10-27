@@ -564,7 +564,9 @@ export const ComponentDetailCard = React.memo<ComponentDetailCardProps>(function
                       </span>
                     </div>
                     {(() => {
-                      const conn = relatedConnections[followSignalIdx];
+                      const safeIdx = Math.min(Math.max(0, followSignalIdx), relatedConnections.length - 1);
+                      const conn = relatedConnections[safeIdx] || relatedConnections[0];
+                      if (!conn) return null;
                       const isSource = conn.from === selectedComponent.id;
                       const partnerId = isSource ? conn.to : conn.from;
                       const partner = spec.components.find((c) => c.id === partnerId);
@@ -590,7 +592,7 @@ export const ComponentDetailCard = React.memo<ComponentDetailCardProps>(function
                           <div className="flex gap-1.5">
                             <button
                               type="button"
-                              disabled={followSignalIdx === 0}
+                              disabled={safeIdx === 0}
                               onClick={() => setFollowSignalIdx((i) => Math.max(0, i - 1))}
                               className="p-1.5 rounded border text-xs cursor-pointer disabled:opacity-30"
                               style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-muted)' }}
@@ -599,7 +601,7 @@ export const ComponentDetailCard = React.memo<ComponentDetailCardProps>(function
                             </button>
                             <button
                               type="button"
-                              disabled={followSignalIdx >= relatedConnections.length - 1}
+                              disabled={safeIdx >= relatedConnections.length - 1}
                               onClick={() => setFollowSignalIdx((i) => Math.min(relatedConnections.length - 1, i + 1))}
                               className="p-1.5 rounded border text-xs cursor-pointer disabled:opacity-30"
                               style={{ backgroundColor: 'var(--sl-bg-surface)', borderColor: 'var(--sl-border)', color: 'var(--sl-text-muted)' }}
