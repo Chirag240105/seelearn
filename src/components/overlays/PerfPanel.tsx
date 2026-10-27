@@ -63,9 +63,9 @@ export const PerfPanel: React.FC = () => {
         type="button"
         onClick={() => perfStore.toggle(true)}
         title="Toggle Performance HUD (Press P)"
-        className="fixed bottom-3 right-3 z-50 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono font-medium shadow-md transition-all cursor-pointer backdrop-blur-md opacity-70 hover:opacity-100"
+        className="fixed bottom-3 right-3 z-50 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono font-medium shadow-md transition-all cursor-pointer opacity-70 hover:opacity-100"
         style={{
-          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
           borderColor: 'rgba(71, 85, 105, 0.5)',
           color: '#94a3b8',
         }}
@@ -78,9 +78,9 @@ export const PerfPanel: React.FC = () => {
 
   return (
     <div
-      className="fixed top-14 right-4 z-50 w-72 rounded-xl border shadow-2xl p-3 text-xs font-mono backdrop-blur-md select-none transition-all"
+      className="fixed top-14 right-4 z-50 w-72 rounded-xl border shadow-2xl p-3 text-xs font-mono select-none transition-all"
       style={{
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+        backgroundColor: 'rgba(15, 23, 42, 0.96)',
         borderColor: 'rgba(71, 85, 105, 0.6)',
         color: '#e2e8f0',
       }}

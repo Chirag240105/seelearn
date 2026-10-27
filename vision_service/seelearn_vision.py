@@ -280,7 +280,7 @@ class SeeLearnVisionService:
         self.calibrator = CoordinateCalibrator()
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
-            static_image_mode=False, max_num_hands=1, model_complexity=1,
+            static_image_mode=False, max_num_hands=1, model_complexity=0,
             min_detection_confidence=0.65, min_tracking_confidence=0.65
         )
         self.mp_draw = mp.solutions.drawing_utils
@@ -445,6 +445,9 @@ class SeeLearnVisionService:
     async def broadcast_loop(self):
         print(f"[OpenCV Vision] Service broadcasting on ws://localhost:{self.port} ...")
         previous_loop_time = time.perf_counter()
+        last_send_time = 0.0
+        last_sent_payload = None
+        last_debug_time = 0.0
         while self.running:
             loop_started = time.perf_counter()
             loop_delta = max(loop_started - previous_loop_time, 1e-6)
@@ -571,9 +574,29 @@ class SeeLearnVisionService:
                 raw_cursor, filtered_cursor, packet["gestureState"], detected,
                 (frame_width, frame_height), confidence, packet["metrics"]["latencyMs"],
             )
-            self.update_debug_window(debug_frame, hand_landmarks, raw_point, filtered_point, packet["gestureState"], fps)
+            if self.debug_window_requested and (now - last_debug_time >= 1.0 / 15.0):
+                last_debug_time = now
+                self.update_debug_window(debug_frame, hand_landmarks, raw_point, filtered_point, packet["gestureState"], fps)
 
-            if self.connected_clients:
+            payload_key = (
+                packet["detected"],
+                packet["gestureState"],
+                packet["rotateMode"],
+                packet["cursorNormalized"]["x"],
+                packet["cursorNormalized"]["y"],
+                packet["pinchDistanceNormalized"],
+            )
+
+            time_since_send = now - last_send_time
+            # Throttle WebSocket sends to 30 per second (0.033s), skip identical packets, send at least 5 Hz heartbeat
+            should_send = (
+                (time_since_send >= 0.033 and payload_key != last_sent_payload)
+                or (time_since_send >= 0.2)
+            )
+
+            if should_send and self.connected_clients:
+                last_send_time = now
+                last_sent_payload = payload_key
                 message = json.dumps(packet)
                 for client in list(self.connected_clients):
                     try:

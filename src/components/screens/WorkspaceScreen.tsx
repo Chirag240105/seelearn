@@ -38,7 +38,6 @@ import { SceneSpec, ConnectionType, SceneExperiment, SceneComponent } from '../.
 import { GestureState, VisionMetrics, HandTrackingPacket, VisionServiceState } from '../../types/vision';
 import { GenericSceneCanvas } from '../viewport3d/GenericSceneCanvas';
 import { ComponentDetailCard } from '../overlays/ComponentDetailCard';
-import { GestureCursorOverlay } from '../overlays/GestureCursorOverlay';
 import { TraceLegend } from '../modes/TraceLegend';
 import { ExperimentModal } from '../modes/ExperimentModal';
 import { AssemblyStepsPanel } from '../modes/AssemblyStepsPanel';
@@ -49,6 +48,52 @@ import { seeLearnApiClient } from '../../services/awsClient';
 import { useTheme } from '../../hooks/useTheme';
 import { getAllSamples, getRecentModels, SampleMeta } from '../../data/samples/samplesIndex';
 import { perfStore } from '../../services/perfStore';
+import { gestureStore } from '../../services/gestureStore';
+
+const LiveVisionMetricsChip: React.FC = () => {
+  const fpsRef = useRef<HTMLSpanElement>(null);
+  const confRef = useRef<HTMLSpanElement>(null);
+  const jitterRef = useRef<HTMLSpanElement>(null);
+  const latRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    return gestureStore.subscribe(() => {
+      const m = gestureStore.metrics;
+      if (!m) return;
+      if (fpsRef.current) fpsRef.current.textContent = `${m.fps}`;
+      if (confRef.current) confRef.current.textContent = `${Math.round(m.confidence * 100)}%`;
+      if (jitterRef.current) jitterRef.current.textContent = `±${m.jitterPx.toFixed(1)}`;
+      if (latRef.current) latRef.current.textContent = `${m.latencyMs.toFixed(0)}ms`;
+    });
+  }, []);
+
+  return (
+    <div
+      className="p-2 rounded-lg border grid grid-cols-4 gap-1 text-center font-mono text-xs"
+      style={{
+        backgroundColor: 'var(--sl-bg-base)',
+        borderColor: 'var(--sl-border-subtle)',
+      }}
+    >
+      <div>
+        <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>FPS</span>
+        <span ref={fpsRef} className="font-semibold" style={{ color: 'var(--sl-accent)' }}>0</span>
+      </div>
+      <div>
+        <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>Conf</span>
+        <span ref={confRef} className="font-semibold" style={{ color: 'var(--sl-success)' }}>0%</span>
+      </div>
+      <div>
+        <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>Jitter</span>
+        <span ref={jitterRef} className="font-semibold">±0.0</span>
+      </div>
+      <div>
+        <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>Latency</span>
+        <span ref={latRef} className="font-semibold text-amber-300">0ms</span>
+      </div>
+    </div>
+  );
+};
 
 interface WorkspaceScreenProps {
   spec: SceneSpec;
@@ -91,21 +136,13 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
   const [calibrationStatus, setCalibrationStatus] = useState<'pending' | 'success' | 'failure' | null>(null);
   const [gestureState, setGestureState] = useState<GestureState>('IDLE');
   const [rotateMode, setRotateMode] = useState<boolean>(false);
-  const [gestureCursor, setGestureCursor] = useState<{ x: number; y: number } | null>(null);
-  const [rawCursor, setRawCursor] = useState<{ x: number; y: number } | null>(null);
-  const [pinchDistance, setPinchDistance] = useState(0.8);
+  // Cursor customization settings
+  const [cursorVisible, setCursorVisible] = useState(gestureStore.cursorVisible);
+  const [cursorSize, setCursorSize] = useState(gestureStore.cursorSize);
+  const [miniMapVisible, setMiniMapVisible] = useState(gestureStore.miniMapVisible);
   const [isCameraPillOpen, setIsCameraPillOpen] = useState(false);
   const [isCalibrationOpen, setIsCalibrationOpen] = useState(false);
   const [debugViewActive, setDebugViewActive] = useState(false);
-
-  // Vision metrics
-  const [metrics, setMetrics] = useState<VisionMetrics>({
-    fps: 0,
-    confidence: 0,
-    jitterPx: 0,
-    lossEvents: 0,
-    latencyMs: 0,
-  });
 
   // Modals & Panels
   const [isExperimentOpen, setIsExperimentOpen] = useState(false);
@@ -175,25 +212,14 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
       }
     });
 
-    const unsubPacket = visionClient.onPacket((packet: HandTrackingPacket) => {
-      if (typeof packet.camera === 'boolean') {
-        setCameraEnabled(packet.camera);
+    const unsubLowFreq = gestureStore.subscribeLowFreq(
+      ({ detected, cameraOn, gestureState: gState, rotateMode: rMode }) => {
+        setIsHandDetected(detected);
+        setCameraEnabled(cameraOn);
+        setGestureState(gState);
+        setRotateMode(rMode);
       }
-      setIsHandDetected(packet.detected);
-      if (packet.detected && packet.camera !== false) {
-        setGestureCursor(packet.cursorNormalized);
-        setRawCursor(packet.cursorRaw || packet.cursorNormalized);
-        setGestureState(packet.gestureState);
-        setRotateMode(packet.rotateMode);
-        setPinchDistance(packet.pinchDistanceNormalized);
-      } else {
-        setGestureCursor(null);
-        setRawCursor(null);
-        setGestureState('IDLE');
-        setRotateMode(false);
-      }
-      setMetrics(packet.metrics);
-    });
+    );
 
     const unsubState = visionClient.onServiceState((state: VisionServiceState) => {
       setVisionServiceState(state);
@@ -207,7 +233,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
 
     return () => {
       unsubStatus();
-      unsubPacket();
+      unsubLowFreq();
       unsubState();
     };
   }, []);
@@ -562,7 +588,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
             {/* Camera Pill Settings Popover */}
             {isCameraPillOpen && (
               <div
-                className="absolute right-0 top-11 w-72 p-3.5 rounded-xl border shadow-2xl z-50 space-y-3 backdrop-blur-xl"
+                className="absolute right-0 top-11 w-72 p-3.5 rounded-xl border shadow-2xl z-50 space-y-3"
                 style={{
                   backgroundColor: 'var(--sl-bg-surface)',
                   borderColor: 'var(--sl-border)',
@@ -636,7 +662,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-700/40">
                     <button
                       type="button"
                       onClick={() => {
@@ -654,37 +680,75 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
                       <span>Calibrate Reach Bounds</span>
                     </button>
                   </div>
+
+                  {/* Pointer controls (Step 6) */}
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-700/40">
+                    <span style={{ color: 'var(--sl-text-secondary)' }}>Pointer Overlay</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !cursorVisible;
+                        setCursorVisible(next);
+                        gestureStore.setCursorVisible(next);
+                      }}
+                      className="px-2 py-0.5 rounded text-xs border font-mono cursor-pointer"
+                      style={{
+                        backgroundColor: cursorVisible ? 'var(--sl-accent-muted)' : 'transparent',
+                        borderColor: 'var(--sl-border)',
+                        color: cursorVisible ? 'var(--sl-accent)' : 'var(--sl-text-muted)',
+                      }}
+                    >
+                      {cursorVisible ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span style={{ color: 'var(--sl-text-secondary)' }}>Pointer Size</span>
+                    <div className="flex gap-1">
+                      {(['small', 'medium', 'large'] as const).map((sz) => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => {
+                            setCursorSize(sz);
+                            gestureStore.setCursorSize(sz);
+                          }}
+                          className="px-2 py-0.5 rounded text-[10px] font-mono border capitalize cursor-pointer"
+                          style={{
+                            backgroundColor: cursorSize === sz ? 'var(--sl-accent)' : 'transparent',
+                            borderColor: cursorSize === sz ? 'var(--sl-accent)' : 'var(--sl-border)',
+                            color: cursorSize === sz ? '#ffffff' : 'var(--sl-text-secondary)',
+                          }}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span style={{ color: 'var(--sl-text-secondary)' }}>Hand Mini-Map</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !miniMapVisible;
+                        setMiniMapVisible(next);
+                        gestureStore.setMiniMapVisible(next);
+                      }}
+                      className="px-2 py-0.5 rounded text-xs border font-mono cursor-pointer"
+                      style={{
+                        backgroundColor: miniMapVisible ? 'var(--sl-accent-muted)' : 'transparent',
+                        borderColor: 'var(--sl-border)',
+                        color: miniMapVisible ? 'var(--sl-accent)' : 'var(--sl-text-muted)',
+                      }}
+                    >
+                      {miniMapVisible ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Live Mini Metrics Row */}
-                <div
-                  className="p-2 rounded-lg border grid grid-cols-4 gap-1 text-center font-mono text-xs"
-                  style={{
-                    backgroundColor: 'var(--sl-bg-base)',
-                    borderColor: 'var(--sl-border-subtle)',
-                  }}
-                >
-                  <div>
-                    <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>FPS</span>
-                    <span className="font-semibold" style={{ color: 'var(--sl-accent)' }}>{metrics.fps}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>Conf</span>
-                    <span className="font-semibold" style={{ color: 'var(--sl-success)' }}>
-                      {(metrics.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>Jitter</span>
-                    <span className="font-semibold">±{metrics.jitterPx.toFixed(1)}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px]" style={{ color: 'var(--sl-text-muted)' }}>Loss</span>
-                    <span className="font-semibold" style={{ color: 'var(--sl-warning)' }}>
-                      {metrics.lossEvents}
-                    </span>
-                  </div>
-                </div>
+                {/* Live Mini Metrics Row - reads directly from gestureStore with zero React re-renders */}
+                <LiveVisionMetricsChip />
               </div>
             )}
           </div>
@@ -1008,7 +1072,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
           {/* Dismissible Learning Goals Card (Step 2) */}
           {showLearningGoals && spec.learningObjectives && spec.learningObjectives.length > 0 && (
             <div
-              className="absolute top-3 right-3 sm:right-6 z-20 max-w-sm w-[calc(100%-1.5rem)] rounded-xl border p-3.5 shadow-xl backdrop-blur-xl animate-in fade-in"
+              className="absolute top-3 right-3 sm:right-6 z-20 max-w-sm w-[calc(100%-1.5rem)] rounded-xl border p-3.5 shadow-xl animate-in fade-in"
               style={{
                 backgroundColor: 'var(--sl-bg-surface)',
                 borderColor: 'var(--sl-border)',
@@ -1058,26 +1122,12 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
             connectionFilter={connectionFilter}
             activeExperiment={activeExperiment}
             activeAssemblyStepIndex={currentStepIndex}
-            gestureCursor={cameraEnabled ? gestureCursor : null}
-            gestureState={cameraEnabled ? gestureState : 'IDLE'}
-            rotateMode={cameraEnabled && rotateMode}
-            detected={cameraEnabled && isHandDetected}
             resetToken={cameraResetToken}
           />
 
-          {/* Gesture Cursor Overlay (Only active when camera is enabled & hand detected) */}
-          {cameraEnabled && isHandDetected && gestureCursor && (
-            <GestureCursorOverlay
-              cursor={gestureCursor}
-              gestureState={gestureState}
-              rotateMode={rotateMode}
-              pinchDistance={pinchDistance}
-            />
-          )}
-
           {/* Bottom-Center Floating Toolbar (Rotate, Explode, Connections, Operate, Reset) */}
           <div
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-1.5 rounded-xl border shadow-xl backdrop-blur-xl"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-1.5 rounded-xl border shadow-xl"
             style={{
               backgroundColor: 'var(--sl-bg-surface)',
               borderColor: 'var(--sl-border)',
@@ -1087,7 +1137,13 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
             {/* Rotate toggle */}
             <button
               type="button"
-              onClick={() => setRotateMode((v) => !v)}
+              onClick={() => {
+                setRotateMode((v) => {
+                  const next = !v;
+                  gestureStore.rotateMode = next;
+                  return next;
+                });
+              }}
               className="p-2 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
               style={{
                 backgroundColor: rotateMode ? 'var(--sl-accent-muted)' : 'var(--sl-bg-raised)',
@@ -1171,7 +1227,7 @@ export const WorkspaceScreen: React.FC<WorkspaceScreenProps> = ({
 
           {/* Bottom-Right Small Gesture / FPS Chip */}
           <div
-            className="absolute bottom-4 right-4 z-20 px-2.5 py-1 rounded-lg border text-xs font-mono backdrop-blur-md flex items-center gap-2"
+            className="absolute bottom-4 right-4 z-20 px-2.5 py-1 rounded-lg border text-xs font-mono flex items-center gap-2 shadow-md"
             style={{
               backgroundColor: 'var(--sl-bg-surface)',
               borderColor: 'var(--sl-border)',

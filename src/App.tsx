@@ -1,11 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, lazy, Suspense } from 'react';
 import { SceneSpec } from './types/sceneSpec';
 import { DEFAULT_SAMPLE, getSampleByTopic, addRecentModel } from './data/samples/samplesIndex';
 import { seeLearnApiClient } from './services/awsClient';
 import { PromptScreen } from './components/screens/PromptScreen';
-import { LoadingScreen } from './components/screens/LoadingScreen';
-import { WorkspaceScreen } from './components/screens/WorkspaceScreen';
 import { PerfPanel } from './components/overlays/PerfPanel';
+import { GlobalGestureCursor } from './components/overlays/GlobalGestureCursor';
+
+const LoadingScreen = lazy(() =>
+  import('./components/screens/LoadingScreen').then((m) => ({ default: m.LoadingScreen }))
+);
+const WorkspaceScreen = lazy(() =>
+  import('./components/screens/WorkspaceScreen').then((m) => ({ default: m.WorkspaceScreen }))
+);
 
 export default function App() {
   const [screen, setScreen] = useState<'prompt' | 'loading' | 'workspace'>('prompt');
@@ -99,57 +105,69 @@ export default function App() {
         />
       )}
 
-      {screen === 'loading' && (
-        <LoadingScreen
-          goalPrompt={activePrompt}
-          isGenerating={isGenerating}
-          onOpenSample={handleOpenSampleFromLoading}
-          error={loadingError}
-          onRetry={seeLearnApiClient.getEndpoint() ? () => handleRunPrompt(activePrompt) : undefined}
-          onBackToLibrary={handleBackToPrompt}
-          onEditTopic={handleBackToPrompt}
-        />
-      )}
-
-      {screen === 'workspace' && (
-        <>
-          <WorkspaceScreen
-            spec={activeSpec}
-            onBackToPrompt={handleBackToPrompt}
-            onSelectSpec={handleSelectSpec}
-            onRegenerate={() => handleRunPrompt(activePrompt)}
+      <Suspense
+        fallback={
+          <div
+            className="w-full h-full min-h-screen flex items-center justify-center font-mono text-xs"
+            style={{ backgroundColor: 'var(--sl-bg-base)', color: 'var(--sl-text-secondary)' }}
+          >
+            Loading...
+          </div>
+        }
+      >
+        {screen === 'loading' && (
+          <LoadingScreen
+            goalPrompt={activePrompt}
+            isGenerating={isGenerating}
+            onOpenSample={handleOpenSampleFromLoading}
+            error={loadingError}
+            onRetry={seeLearnApiClient.getEndpoint() ? () => handleRunPrompt(activePrompt) : undefined}
+            onBackToLibrary={handleBackToPrompt}
+            onEditTopic={handleBackToPrompt}
           />
+        )}
 
-          {notice && (
-            <div
-              className="fixed bottom-20 right-6 z-50 max-w-sm p-4 rounded-xl shadow-2xl text-xs flex flex-col gap-2 border"
-              style={{
-                backgroundColor: 'var(--sl-bg-surface)',
-                borderColor: 'var(--sl-accent)',
-                color: 'var(--sl-text-primary)',
-              }}
-            >
-              <span className="font-bold uppercase tracking-wider text-xs" style={{ color: 'var(--sl-accent)' }}>
-                System Notice
-              </span>
-              <p style={{ color: 'var(--sl-text-secondary)' }}>{notice}</p>
-              <button
-                type="button"
-                onClick={() => setNotice(null)}
-                className="self-end px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+        {screen === 'workspace' && (
+          <>
+            <WorkspaceScreen
+              spec={activeSpec}
+              onBackToPrompt={handleBackToPrompt}
+              onSelectSpec={handleSelectSpec}
+              onRegenerate={() => handleRunPrompt(activePrompt)}
+            />
+
+            {notice && (
+              <div
+                className="fixed bottom-20 right-6 z-50 max-w-sm p-4 rounded-xl shadow-2xl text-xs flex flex-col gap-2 border"
                 style={{
-                  backgroundColor: 'var(--sl-accent)',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--sl-bg-surface)',
+                  borderColor: 'var(--sl-accent)',
+                  color: 'var(--sl-text-primary)',
                 }}
               >
-                Dismiss
-              </button>
-            </div>
-          )}
-        </>
-      )}
+                <span className="font-bold uppercase tracking-wider text-xs" style={{ color: 'var(--sl-accent)' }}>
+                  System Notice
+                </span>
+                <p style={{ color: 'var(--sl-text-secondary)' }}>{notice}</p>
+                <button
+                  type="button"
+                  onClick={() => setNotice(null)}
+                  className="self-end px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--sl-accent)',
+                    color: '#ffffff',
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </Suspense>
 
       <PerfPanel />
+      <GlobalGestureCursor />
     </div>
   );
 }
