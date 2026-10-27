@@ -54,6 +54,13 @@ for (const path in sampleModules) {
   }
 }
 
+// Sort autoLoadedSamples so freestyle_drone is first
+autoLoadedSamples.sort((a, b) => {
+  if (a.id === 'freestyle_drone') return -1;
+  if (b.id === 'freestyle_drone') return 1;
+  return 0;
+});
+
 // Dynamic custom samples registered by user (e.g. JSON file drop)
 const customSamples: SampleMeta[] = [];
 
@@ -63,6 +70,7 @@ const recentSpecs = new Map<string, SceneSpec>();
 export const BUNDLED_SAMPLES: SampleMeta[] = autoLoadedSamples;
 
 export const DEFAULT_SAMPLE: SceneSpec =
+  autoLoadedSamples.find((s) => s.id === 'freestyle_drone')?.spec ||
   autoLoadedSamples.find((s) => s.id === 'racing_drone')?.spec ||
   autoLoadedSamples[0]?.spec;
 

@@ -1,0 +1,1718 @@
+{
+  "schemaVersion": 1,
+  "topic": "5-inch freestyle FPV drone",
+  "title": "5-Inch Freestyle FPV Drone",
+  "overview": "A freestyle drone is a small, fast flying machine controlled through a live camera view. Four motors spin four propellers. A tiny computer, the flight controller, adjusts those motors thousands of times per second to keep the drone steady. Select any part to see what it does and what it is connected to.",
+  "scaleNote": "Scale model: 1 unit is about 28 mm, so the 225 mm wheelbase is about 8 units. Wires, screws and small details are left out.",
+  "layoutStyle": "assembly",
+  "learningObjectives": [
+    "Name the main parts of a drone and what each one does",
+    "Explain how four motors steer a drone by spinning at different speeds",
+    "Explain why neighboring propellers spin in opposite directions",
+    "Follow the path from battery to motor to propeller"
+  ],
+  "components": [
+    {
+      "id": "frame_arms",
+      "name": "Carbon Fiber Arms",
+      "group": "Structure",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            4.1,
+            0.16,
+            0.7
+          ],
+          "position": [
+            1.42,
+            0,
+            1.42
+          ],
+          "rotation": [
+            0,
+            -0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            4.1,
+            0.16,
+            0.7
+          ],
+          "position": [
+            -1.42,
+            0,
+            -1.42
+          ],
+          "rotation": [
+            0,
+            -0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            4.1,
+            0.16,
+            0.7
+          ],
+          "position": [
+            1.42,
+            0,
+            -1.42
+          ],
+          "rotation": [
+            0,
+            0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            4.1,
+            0.16,
+            0.7
+          ],
+          "position": [
+            -1.42,
+            0,
+            1.42
+          ],
+          "rotation": [
+            0,
+            0.785,
+            0
+          ],
+          "material": "carbon_fiber"
+        }
+      ],
+      "summary": "Four strong, light arms that hold the motors away from the body.",
+      "howItWorks": "Each arm is a flat strip of carbon fiber. It is stiff, so the motor does not wobble, and it is thin, so it adds little weight. The arms form an X shape.",
+      "whyNeeded": "Without stiff arms the motors would shake, and the flight controller would read that shaking as real movement.",
+      "keyFacts": [
+        "Typical arm thickness is 5 to 6 mm",
+        "Carbon fiber is stiffer than aluminum at about a third of the weight",
+        "Wheelbase (motor to opposite motor) is about 225 mm here"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        -0.6,
+        0
+      ]
+    },
+    {
+      "id": "frame_bottom_plate",
+      "name": "Bottom Plate",
+      "group": "Structure",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            2.0,
+            0.14,
+            4.4
+          ],
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "carbon_fiber"
+        }
+      ],
+      "summary": "The base that everything else is built on.",
+      "howItWorks": "The four arms are bolted to it. Standoffs rise from it to hold the electronic boards in a neat stack.",
+      "whyNeeded": "It keeps the arms aligned and protects the electronics from below when the drone lands hard.",
+      "keyFacts": [
+        "Usually 2 to 3 mm of carbon fiber",
+        "Carries the weight of the whole stack"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        -1.5,
+        0
+      ]
+    },
+    {
+      "id": "frame_top_plate",
+      "name": "Top Plate",
+      "group": "Structure",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            2.0,
+            0.1,
+            4.4
+          ],
+          "position": [
+            0,
+            1.15,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "carbon_fiber"
+        }
+      ],
+      "summary": "A cover that closes the stack and gives the battery a flat seat.",
+      "howItWorks": "It is bolted to the top of the standoffs. The battery strap runs through it, which pins the battery down.",
+      "whyNeeded": "A loose battery shifts the balance in flight, so it must be held firmly.",
+      "keyFacts": [
+        "Stiffens the frame like a sandwich",
+        "The battery sits directly on it"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        2.4,
+        0
+      ]
+    },
+    {
+      "id": "standoffs",
+      "name": "Metal Standoffs",
+      "group": "Structure",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.07,
+            1.08
+          ],
+          "position": [
+            -0.545,
+            0.61,
+            -0.545
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.07,
+            1.08
+          ],
+          "position": [
+            -0.545,
+            0.61,
+            0.545
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.07,
+            1.08
+          ],
+          "position": [
+            0.545,
+            0.61,
+            -0.545
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.07,
+            1.08
+          ],
+          "position": [
+            0.545,
+            0.61,
+            0.545
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        }
+      ],
+      "summary": "Four small pillars that hold the boards apart.",
+      "howItWorks": "Screws pass through the boards and into the standoffs. The pillars keep a small air gap between each board.",
+      "whyNeeded": "Boards that touch each other can short-circuit or overheat.",
+      "keyFacts": [
+        "The 30.5 x 30.5 mm hole pattern is a common stack standard"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        0.4,
+        0
+      ]
+    },
+    {
+      "id": "esc",
+      "name": "4-in-1 ESC (Motor Controller)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            1.2,
+            0.08,
+            1.2
+          ],
+          "position": [
+            0,
+            0.35,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "pcb_black"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.14,
+            0.3
+          ],
+          "position": [
+            -0.3,
+            0.54,
+            0.3
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.3,
+            0.03,
+            0.2
+          ],
+          "position": [
+            0,
+            0.405,
+            0.5
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        }
+      ],
+      "summary": "The board that turns battery power into motor movement.",
+      "howItWorks": "The flight controller sends a speed number for each motor. The ESC switches the battery power on and off very fast, in the right order, to spin each motor at that speed.",
+      "whyNeeded": "Motors cannot run directly from a battery. They need exact timing, and the ESC provides it for all four motors.",
+      "keyFacts": [
+        "Four ESCs on one board saves space and wires",
+        "The big capacitor smooths voltage spikes",
+        "Gold pads are where the battery wire is soldered"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        0.7,
+        0
+      ]
+    },
+    {
+      "id": "flight_controller",
+      "name": "Flight Controller",
+      "group": "Logic & Sensors",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            1.2,
+            0.08,
+            1.2
+          ],
+          "position": [
+            0,
+            0.8,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "pcb_black"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.3,
+            0.05,
+            0.3
+          ],
+          "position": [
+            0.1,
+            0.865,
+            0.1
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.15,
+            0.04,
+            0.15
+          ],
+          "position": [
+            -0.3,
+            0.86,
+            -0.2
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "ceramic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.28,
+            0.1,
+            0.2
+          ],
+          "position": [
+            0,
+            0.89,
+            -0.5
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        }
+      ],
+      "summary": "The brain. It keeps the drone level and follows your stick commands.",
+      "howItWorks": "A motion sensor (gyro) tells it how the drone is tilting, thousands of times per second. The chip compares that with what you asked for and speeds up or slows down each motor to fix the difference.",
+      "whyNeeded": "A drone is not naturally stable. Without constant tiny corrections it would tumble within a second.",
+      "keyFacts": [
+        "The control loop typically runs at 4,000 to 8,000 times per second",
+        "The small ceramic chip is the gyro and accelerometer",
+        "The metal connector is the USB port for settings"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        1.6,
+        0
+      ]
+    },
+    {
+      "id": "battery",
+      "name": "LiPo Battery (4S)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "roundedBox",
+          "size": [
+            1.25,
+            1.07,
+            2.7
+          ],
+          "position": [
+            0,
+            1.735,
+            0.15
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            1.31,
+            1.11,
+            0.3
+          ],
+          "position": [
+            0,
+            1.735,
+            -0.5
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "rubber"
+        },
+        {
+          "shape": "box",
+          "size": [
+            1.31,
+            1.11,
+            0.3
+          ],
+          "position": [
+            0,
+            1.735,
+            0.8
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "rubber"
+        }
+      ],
+      "summary": "The energy source. It powers the motors and all electronics.",
+      "howItWorks": "Four lithium cells in a row give about 14.8 V. The ESC pulls the current it needs, and the motors use most of it.",
+      "whyNeeded": "Drones need a lot of power for their weight. Lithium polymer cells store the most energy for their weight in this size.",
+      "keyFacts": [
+        "4S means four cells in series, about 14.8 V nominal (16.8 V full)",
+        "A 5-inch drone usually flies 3 to 5 minutes per battery",
+        "Weighs about 150 to 200 g, roughly a quarter of the drone"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        3.4,
+        0
+      ]
+    },
+    {
+      "id": "receiver",
+      "name": "Radio Receiver (ELRS)",
+      "group": "Logic & Sensors",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            0.55,
+            0.05,
+            0.7
+          ],
+          "position": [
+            0,
+            1.225,
+            1.85
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "pcb_green"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.25,
+            0.05,
+            0.25
+          ],
+          "position": [
+            0,
+            1.275,
+            1.95
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "silicon_die"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.03,
+            1.4
+          ],
+          "position": [
+            0,
+            1.5,
+            2.75
+          ],
+          "rotation": [
+            1.2,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        }
+      ],
+      "summary": "Listens to your controller and passes your commands on.",
+      "howItWorks": "Your radio sends commands as 2.4 GHz radio signals. The antenna picks them up, the chip decodes them, and the result goes to the flight controller as a stream of numbers.",
+      "whyNeeded": "Without it the drone cannot receive your steering and throttle.",
+      "keyFacts": [
+        "ExpressLRS is a popular long-range radio link",
+        "The antenna points backward and up so the body does not block the signal"
+      ],
+      "confidence": "high",
+      "explode": [
+        0,
+        2.9,
+        1.2
+      ]
+    },
+    {
+      "id": "fpv_camera",
+      "name": "FPV Camera",
+      "group": "Logic & Sensors",
+      "parts": [
+        {
+          "shape": "box",
+          "size": [
+            0.9,
+            0.7,
+            0.45
+          ],
+          "position": [
+            0,
+            0.3,
+            -2.4
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            0.7,
+            0.7,
+            0.55
+          ],
+          "position": [
+            0,
+            0.78,
+            -2.72
+          ],
+          "rotation": [
+            0.5,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.24,
+            0.3
+          ],
+          "position": [
+            0,
+            0.984,
+            -3.093
+          ],
+          "rotation": [
+            -1.071,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.18,
+            0.04
+          ],
+          "position": [
+            0,
+            1.055,
+            -3.225
+          ],
+          "rotation": [
+            -1.071,
+            0,
+            0
+          ],
+          "material": "smoked_glass"
+        }
+      ],
+      "summary": "The drone's eye. It shows the pilot what the drone sees.",
+      "howItWorks": "The camera sends live video to the pilot's goggles. It is tilted up so the view stays forward when the drone leans into fast flight.",
+      "whyNeeded": "The pilot flies by looking through this camera, so it must be fast and show no delay.",
+      "keyFacts": [
+        "A tilt of about 25 to 35 degrees is common for freestyle",
+        "Video delay is often below 30 ms with analog or digital systems"
+      ],
+      "confidence": "medium",
+      "explode": [
+        0,
+        0.4,
+        -1.5
+      ]
+    },
+    {
+      "id": "motor_front_left",
+      "name": "Motor (Front Left)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.35,
+            0.22
+          ],
+          "position": [
+            -2.84,
+            0.19,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.44,
+            0.04
+          ],
+          "position": [
+            -2.84,
+            0.32,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.42,
+            0.5
+          ],
+          "position": [
+            -2.84,
+            0.59,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        }
+      ],
+      "summary": "Spins a propeller to push air downward.",
+      "howItWorks": "Magnets on the outer bell spin around fixed coils. The ESC pulses current through the coils in order, which pulls the bell round and round.",
+      "whyNeeded": "Each motor makes lift. Changing the speed of one motor against the others tilts or turns the drone.",
+      "keyFacts": [
+        "A 2207 motor has a 22 mm wide, 7 mm tall stator",
+        "Can spin at tens of thousands of RPM",
+        "Often lifts 1 kg or more at full power"
+      ],
+      "confidence": "high",
+      "explode": [
+        -1.2,
+        0.6,
+        -1.2
+      ]
+    },
+    {
+      "id": "motor_front_right",
+      "name": "Motor (Front Right)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.35,
+            0.22
+          ],
+          "position": [
+            2.84,
+            0.19,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.44,
+            0.04
+          ],
+          "position": [
+            2.84,
+            0.32,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.42,
+            0.5
+          ],
+          "position": [
+            2.84,
+            0.59,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        }
+      ],
+      "summary": "Spins a propeller to push air downward.",
+      "howItWorks": "Magnets on the outer bell spin around fixed coils. The ESC pulses current through the coils in order, which pulls the bell round and round.",
+      "whyNeeded": "Each motor makes lift. Changing the speed of one motor against the others tilts or turns the drone.",
+      "keyFacts": [
+        "A 2207 motor has a 22 mm wide, 7 mm tall stator",
+        "Can spin at tens of thousands of RPM",
+        "Often lifts 1 kg or more at full power"
+      ],
+      "confidence": "high",
+      "explode": [
+        1.2,
+        0.6,
+        -1.2
+      ]
+    },
+    {
+      "id": "motor_rear_left",
+      "name": "Motor (Rear Left)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.35,
+            0.22
+          ],
+          "position": [
+            -2.84,
+            0.19,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.44,
+            0.04
+          ],
+          "position": [
+            -2.84,
+            0.32,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.42,
+            0.5
+          ],
+          "position": [
+            -2.84,
+            0.59,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        }
+      ],
+      "summary": "Spins a propeller to push air downward.",
+      "howItWorks": "Magnets on the outer bell spin around fixed coils. The ESC pulses current through the coils in order, which pulls the bell round and round.",
+      "whyNeeded": "Each motor makes lift. Changing the speed of one motor against the others tilts or turns the drone.",
+      "keyFacts": [
+        "A 2207 motor has a 22 mm wide, 7 mm tall stator",
+        "Can spin at tens of thousands of RPM",
+        "Often lifts 1 kg or more at full power"
+      ],
+      "confidence": "high",
+      "explode": [
+        -1.2,
+        0.6,
+        1.2
+      ]
+    },
+    {
+      "id": "motor_rear_right",
+      "name": "Motor (Rear Right)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.35,
+            0.22
+          ],
+          "position": [
+            2.84,
+            0.19,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.44,
+            0.04
+          ],
+          "position": [
+            2.84,
+            0.32,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.42,
+            0.5
+          ],
+          "position": [
+            2.84,
+            0.59,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "brushed_metal"
+        }
+      ],
+      "summary": "Spins a propeller to push air downward.",
+      "howItWorks": "Magnets on the outer bell spin around fixed coils. The ESC pulses current through the coils in order, which pulls the bell round and round.",
+      "whyNeeded": "Each motor makes lift. Changing the speed of one motor against the others tilts or turns the drone.",
+      "keyFacts": [
+        "A 2207 motor has a 22 mm wide, 7 mm tall stator",
+        "Can spin at tens of thousands of RPM",
+        "Often lifts 1 kg or more at full power"
+      ],
+      "confidence": "high",
+      "explode": [
+        1.2,
+        0.6,
+        1.2
+      ]
+    },
+    {
+      "id": "prop_front_left",
+      "name": "Propeller (Front Left)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.22,
+            0.1
+          ],
+          "position": [
+            -2.84,
+            0.9,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.1,
+            0.16
+          ],
+          "position": [
+            -2.84,
+            0.93,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            -1.595,
+            0.92,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0.0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            -3.462,
+            0.92,
+            -3.918
+          ],
+          "rotation": [
+            0,
+            2.094,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            -3.463,
+            0.92,
+            -1.762
+          ],
+          "rotation": [
+            0,
+            4.189,
+            0
+          ],
+          "material": "black_plastic"
+        }
+      ],
+      "summary": "A three-blade fan that creates lift.",
+      "howItWorks": "The curved blades push air down as they spin, and the air pushes the drone up. This one spins counter-clockwise so the drone does not spin the other way.",
+      "whyNeeded": "Neighboring propellers spin in opposite directions so their twisting forces cancel out. This keeps the drone pointing straight.",
+      "keyFacts": [
+        "5-inch means a 127 mm diameter",
+        "Opposite spin directions cancel yaw",
+        "A broken blade makes the drone shake and wastes battery"
+      ],
+      "confidence": "high",
+      "explode": [
+        -1.6,
+        1.8,
+        -1.6
+      ]
+    },
+    {
+      "id": "prop_front_right",
+      "name": "Propeller (Front Right)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.22,
+            0.1
+          ],
+          "position": [
+            2.84,
+            0.9,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.1,
+            0.16
+          ],
+          "position": [
+            2.84,
+            0.93,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            4.085,
+            0.92,
+            -2.84
+          ],
+          "rotation": [
+            0,
+            0.0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            2.218,
+            0.92,
+            -3.918
+          ],
+          "rotation": [
+            0,
+            2.094,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            2.217,
+            0.92,
+            -1.762
+          ],
+          "rotation": [
+            0,
+            4.189,
+            0
+          ],
+          "material": "black_plastic"
+        }
+      ],
+      "summary": "A three-blade fan that creates lift.",
+      "howItWorks": "The curved blades push air down as they spin, and the air pushes the drone up. This one spins clockwise so the drone does not spin the other way.",
+      "whyNeeded": "Neighboring propellers spin in opposite directions so their twisting forces cancel out. This keeps the drone pointing straight.",
+      "keyFacts": [
+        "5-inch means a 127 mm diameter",
+        "Opposite spin directions cancel yaw",
+        "A broken blade makes the drone shake and wastes battery"
+      ],
+      "confidence": "high",
+      "explode": [
+        1.6,
+        1.8,
+        -1.6
+      ]
+    },
+    {
+      "id": "prop_rear_left",
+      "name": "Propeller (Rear Left)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.22,
+            0.1
+          ],
+          "position": [
+            -2.84,
+            0.9,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.1,
+            0.16
+          ],
+          "position": [
+            -2.84,
+            0.93,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            -1.595,
+            0.92,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0.0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            -3.462,
+            0.92,
+            1.762
+          ],
+          "rotation": [
+            0,
+            2.094,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            -3.463,
+            0.92,
+            3.918
+          ],
+          "rotation": [
+            0,
+            4.189,
+            0
+          ],
+          "material": "black_plastic"
+        }
+      ],
+      "summary": "A three-blade fan that creates lift.",
+      "howItWorks": "The curved blades push air down as they spin, and the air pushes the drone up. This one spins clockwise so the drone does not spin the other way.",
+      "whyNeeded": "Neighboring propellers spin in opposite directions so their twisting forces cancel out. This keeps the drone pointing straight.",
+      "keyFacts": [
+        "5-inch means a 127 mm diameter",
+        "Opposite spin directions cancel yaw",
+        "A broken blade makes the drone shake and wastes battery"
+      ],
+      "confidence": "high",
+      "explode": [
+        -1.6,
+        1.8,
+        1.6
+      ]
+    },
+    {
+      "id": "prop_rear_right",
+      "name": "Propeller (Rear Right)",
+      "group": "Power & Propulsion",
+      "parts": [
+        {
+          "shape": "cylinder",
+          "size": [
+            0.22,
+            0.1
+          ],
+          "position": [
+            2.84,
+            0.9,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "cylinder",
+          "size": [
+            0.1,
+            0.16
+          ],
+          "position": [
+            2.84,
+            0.93,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "material": "gold"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            4.085,
+            0.92,
+            2.84
+          ],
+          "rotation": [
+            0,
+            0.0,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            2.218,
+            0.92,
+            1.762
+          ],
+          "rotation": [
+            0,
+            2.094,
+            0
+          ],
+          "material": "black_plastic"
+        },
+        {
+          "shape": "box",
+          "size": [
+            2.05,
+            0.04,
+            0.4
+          ],
+          "position": [
+            2.217,
+            0.92,
+            3.918
+          ],
+          "rotation": [
+            0,
+            4.189,
+            0
+          ],
+          "material": "black_plastic"
+        }
+      ],
+      "summary": "A three-blade fan that creates lift.",
+      "howItWorks": "The curved blades push air down as they spin, and the air pushes the drone up. This one spins counter-clockwise so the drone does not spin the other way.",
+      "whyNeeded": "Neighboring propellers spin in opposite directions so their twisting forces cancel out. This keeps the drone pointing straight.",
+      "keyFacts": [
+        "5-inch means a 127 mm diameter",
+        "Opposite spin directions cancel yaw",
+        "A broken blade makes the drone shake and wastes battery"
+      ],
+      "confidence": "high",
+      "explode": [
+        1.6,
+        1.8,
+        1.6
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "battery",
+      "to": "esc",
+      "type": "power",
+      "label": "Battery power",
+      "description": "Main power from the battery to the motor controller."
+    },
+    {
+      "from": "esc",
+      "to": "flight_controller",
+      "type": "power",
+      "label": "Regulated 5 V",
+      "description": "The ESC lowers the battery voltage to power the brain."
+    },
+    {
+      "from": "flight_controller",
+      "to": "esc",
+      "type": "signal",
+      "label": "Motor commands",
+      "description": "The flight controller sends a speed value for each motor."
+    },
+    {
+      "from": "receiver",
+      "to": "flight_controller",
+      "type": "data",
+      "label": "Radio data",
+      "description": "Stick commands from the pilot, sent as a serial data stream."
+    },
+    {
+      "from": "fpv_camera",
+      "to": "flight_controller",
+      "type": "signal",
+      "label": "Video",
+      "description": "Camera video is sent through the flight controller, which adds on-screen info."
+    },
+    {
+      "from": "esc",
+      "to": "motor_front_left",
+      "type": "power",
+      "label": "Motor phases",
+      "description": "Three pulsed power wires per motor."
+    },
+    {
+      "from": "motor_front_left",
+      "to": "prop_front_left",
+      "type": "mechanical",
+      "label": "Shaft",
+      "description": "The motor shaft turns the propeller."
+    },
+    {
+      "from": "frame_arms",
+      "to": "motor_front_left",
+      "type": "mechanical",
+      "label": "Mounted",
+      "description": "Four screws hold each motor to its arm."
+    },
+    {
+      "from": "esc",
+      "to": "motor_front_right",
+      "type": "power",
+      "label": "Motor phases",
+      "description": "Three pulsed power wires per motor."
+    },
+    {
+      "from": "motor_front_right",
+      "to": "prop_front_right",
+      "type": "mechanical",
+      "label": "Shaft",
+      "description": "The motor shaft turns the propeller."
+    },
+    {
+      "from": "frame_arms",
+      "to": "motor_front_right",
+      "type": "mechanical",
+      "label": "Mounted",
+      "description": "Four screws hold each motor to its arm."
+    },
+    {
+      "from": "esc",
+      "to": "motor_rear_left",
+      "type": "power",
+      "label": "Motor phases",
+      "description": "Three pulsed power wires per motor."
+    },
+    {
+      "from": "motor_rear_left",
+      "to": "prop_rear_left",
+      "type": "mechanical",
+      "label": "Shaft",
+      "description": "The motor shaft turns the propeller."
+    },
+    {
+      "from": "frame_arms",
+      "to": "motor_rear_left",
+      "type": "mechanical",
+      "label": "Mounted",
+      "description": "Four screws hold each motor to its arm."
+    },
+    {
+      "from": "esc",
+      "to": "motor_rear_right",
+      "type": "power",
+      "label": "Motor phases",
+      "description": "Three pulsed power wires per motor."
+    },
+    {
+      "from": "motor_rear_right",
+      "to": "prop_rear_right",
+      "type": "mechanical",
+      "label": "Shaft",
+      "description": "The motor shaft turns the propeller."
+    },
+    {
+      "from": "frame_arms",
+      "to": "motor_rear_right",
+      "type": "mechanical",
+      "label": "Mounted",
+      "description": "Four screws hold each motor to its arm."
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "spin_ccw",
+      "name": "Propellers turning counter-clockwise",
+      "type": "spin",
+      "targets": [
+        "prop_front_left",
+        "prop_rear_right"
+      ],
+      "axis": "y",
+      "speed": 12,
+      "direction": 1,
+      "explanation": "Two diagonal propellers spin counter-clockwise. Conceptual demonstration, not real speed."
+    },
+    {
+      "id": "spin_cw",
+      "name": "Propellers turning clockwise",
+      "type": "spin",
+      "targets": [
+        "prop_front_right",
+        "prop_rear_left"
+      ],
+      "axis": "y",
+      "speed": 12,
+      "direction": -1,
+      "explanation": "The other diagonal pair spins clockwise, so the twisting forces cancel. Conceptual demonstration, not real speed."
+    }
+  ],
+  "assemblySteps": [
+    {
+      "order": 1,
+      "componentIds": [
+        "frame_bottom_plate",
+        "frame_arms"
+      ],
+      "instruction": "Bolt the four carbon arms to the bottom plate."
+    },
+    {
+      "order": 2,
+      "componentIds": [
+        "motor_front_left",
+        "motor_front_right",
+        "motor_rear_left",
+        "motor_rear_right"
+      ],
+      "instruction": "Screw one motor onto the end of each arm."
+    },
+    {
+      "order": 3,
+      "componentIds": [
+        "standoffs",
+        "esc"
+      ],
+      "instruction": "Fit the standoffs, then place the ESC on them and solder the battery pads."
+    },
+    {
+      "order": 4,
+      "componentIds": [
+        "flight_controller"
+      ],
+      "instruction": "Stack the flight controller above the ESC and connect the two."
+    },
+    {
+      "order": 5,
+      "componentIds": [
+        "fpv_camera"
+      ],
+      "instruction": "Mount the camera at the front and tilt it up."
+    },
+    {
+      "order": 6,
+      "componentIds": [
+        "frame_top_plate",
+        "receiver"
+      ],
+      "instruction": "Close the stack with the top plate and fit the radio receiver and antenna."
+    },
+    {
+      "order": 7,
+      "componentIds": [
+        "battery"
+      ],
+      "instruction": "Strap the battery on top and keep it centered."
+    },
+    {
+      "order": 8,
+      "componentIds": [
+        "prop_front_left",
+        "prop_front_right",
+        "prop_rear_left",
+        "prop_rear_right"
+      ],
+      "instruction": "Fit propellers last, so the motors cannot spin up by accident while you work."
+    }
+  ],
+  "experiments": [
+    {
+      "id": "exp_motor_fail",
+      "title": "One motor stops",
+      "action": "disable",
+      "targets": [
+        "motor_rear_left"
+      ],
+      "consequence": "The drone tilts and spins toward the dead corner.",
+      "explanation": "Each motor provides a quarter of the lift. Losing one makes the lift uneven, and the matching propeller's twisting force is no longer cancelled."
+    },
+    {
+      "id": "exp_prop_reverse",
+      "title": "Propeller spins the wrong way",
+      "action": "reverse",
+      "targets": [
+        "prop_front_left"
+      ],
+      "consequence": "That corner pushes air upward instead of downward, and the drone flips at take-off.",
+      "explanation": "Propellers are shaped for one direction. Reversed, they produce little lift and the wrong twist."
+    },
+    {
+      "id": "exp_remove_fc",
+      "title": "Remove the flight controller",
+      "action": "remove",
+      "targets": [
+        "flight_controller"
+      ],
+      "consequence": "No stabilization or commands. The motors get no signals.",
+      "explanation": "The ESC only obeys the flight controller. Without it, nothing tells the motors what to do."
+    },
+    {
+      "id": "exp_overload",
+      "title": "Fly too hard",
+      "action": "overload",
+      "targets": [
+        "battery"
+      ],
+      "consequence": "The battery heats up and its voltage sags, so the drone loses power.",
+      "explanation": "Pulling more current than the battery is rated for creates heat, which can damage the cells."
+    }
+  ]
+}
