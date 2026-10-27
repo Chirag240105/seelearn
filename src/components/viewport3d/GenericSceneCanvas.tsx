@@ -1,10 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, OrbitControls } from '@react-three/drei';
+import {
+  ContactShadows,
+  Environment,
+  Lightformer,
+  MeshReflectorMaterial,
+  OrbitControls,
+  SoftShadows,
+} from '@react-three/drei';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { VignetteShader } from 'three/examples/jsm/shaders/VignetteShader.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { SceneComponent, SceneExperiment, ScenePart, SceneSpec, ConnectionType } from '../../types/sceneSpec';
@@ -68,7 +77,20 @@ function getComponentCenter(component: SceneComponent): THREE.Vector3 {
   return bounds.isEmpty() ? new THREE.Vector3() : bounds.getCenter(new THREE.Vector3());
 }
 
-// Smooth camera controller: flies to frame selected component, auto-fits on reset to ~60% viewport
+function parseAxisVector(axis: any): THREE.Vector3 {
+  if (Array.isArray(axis) && axis.length >= 3) {
+    return new THREE.Vector3(axis[0], axis[1], axis[2]).normalize();
+  }
+  if (typeof axis === 'string') {
+    const lower = axis.toLowerCase();
+    if (lower === 'x') return new THREE.Vector3(1, 0, 0);
+    if (lower === 'y') return new THREE.Vector3(0, 1, 0);
+    if (lower === 'z') return new THREE.Vector3(0, 0, 1);
+  }
+  return new THREE.Vector3(0, 1, 0);
+}
+
+// Smooth camera controller: flies to frame selected component, eases back on deselect, auto-fits to ~60% viewport
 const SmoothCameraController: React.FC<{
   spec: SceneSpec;
   selectedComponentId?: string;
@@ -79,19 +101,34 @@ const SmoothCameraController: React.FC<{
   const targetCamPos = useRef(new THREE.Vector3(4, 3, 5));
   const isTransitioning = useRef(false);
 
-  // Reset or initial fit (auto-fit model to ~60% of viewport)
-  useEffect(() => {
+  // Compute default overview camera distance to fill ~60% of viewport
+  const defaultPose = useMemo(() => {
     const size = getSceneBounds(spec).getSize(new THREE.Vector3());
     const maxDimension = Math.max(size.x, size.y, size.z, 1.5);
     const distance = maxDimension / 2 / Math.tan((38 * Math.PI) / 360) / 0.6;
-    targetCamPos.current.set(distance * 0.72, distance * 0.56, distance * 0.82);
-    targetLookAt.current.set(0, 0, 0);
-    isTransitioning.current = true;
-  }, [spec, resetToken]);
+    return {
+      pos: new THREE.Vector3(distance * 0.72, distance * 0.56, distance * 0.82),
+      target: new THREE.Vector3(0, 0, 0),
+    };
+  }, [spec]);
 
-  // Smooth framing when selected component changes
+  // Reset or initial fit
   useEffect(() => {
-    if (!selectedComponentId) return;
+    targetCamPos.current.copy(defaultPose.pos);
+    targetLookAt.current.copy(defaultPose.target);
+    isTransitioning.current = true;
+  }, [defaultPose, resetToken]);
+
+  // Smooth framing when selected component changes, ease back when deselected
+  useEffect(() => {
+    if (!selectedComponentId) {
+      // Ease back to overview
+      targetCamPos.current.copy(defaultPose.pos);
+      targetLookAt.current.copy(defaultPose.target);
+      isTransitioning.current = true;
+      return;
+    }
+
     const comp = spec.components.find((c) => c.id === selectedComponentId);
     if (!comp) return;
 
@@ -113,7 +150,7 @@ const SmoothCameraController: React.FC<{
     targetCamPos.current.copy(center).addScaledVector(dir, dist);
     targetLookAt.current.copy(center);
     isTransitioning.current = true;
-  }, [selectedComponentId, spec, camera]);
+  }, [selectedComponentId, spec, camera, defaultPose]);
 
   useFrame((_, delta) => {
     if (!isTransitioning.current) return;
@@ -162,6 +199,7 @@ const GestureOrbitController: React.FC<{
   return null;
 };
 
+// Auto-rotate stops on interaction and resumes after 5 seconds
 const IdleAutoRotate: React.FC<{ enabled: boolean }> = ({ enabled }) => {
   const { controls } = useThree();
   const lastInteraction = useRef(Date.now());
@@ -176,33 +214,43 @@ const IdleAutoRotate: React.FC<{ enabled: boolean }> = ({ enabled }) => {
 
   useFrame(() => {
     if (controls) {
-      (controls as any).autoRotate = enabled && Date.now() - lastInteraction.current >= 6000;
+      (controls as any).autoRotate = enabled && Date.now() - lastInteraction.current >= 5000;
     }
   });
 
   return null;
 };
 
-// Subtle, controlled post-processing (bloom off/subtle to prevent neon glow)
+// Subtle studio post-processing: SMAA, Vignette, Selective Bloom, with automatic FPS fallback
 const AdaptivePostProcessing: React.FC<{ hasSelection: boolean }> = ({ hasSelection }) => {
   const { gl, scene, camera, size } = useThree();
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true);
 
   const composer = useMemo(() => {
-    const instance = new EffectComposer(gl);
+    const instance = new EffectComposer(gl, new THREE.WebGLRenderTarget(size.width, size.height, {
+      samples: 0,
+    }));
     instance.addPass(new RenderPass(scene, camera));
-    // Subtle bloom: low strength, high threshold so only specular highlights glow softly
+
+    // Selective soft bloom: high threshold so only selected components & traces bloom softly
     const bloom = new UnrealBloomPass(
       new THREE.Vector2(size.width, size.height),
-      hasSelection ? 0.18 : 0.08,
-      0.4,
+      hasSelection ? 0.22 : 0.08,
+      0.35,
       0.95
     );
     instance.addPass(bloom);
+
+    // Subtle lens vignette to draw eye to center
+    const vignettePass = new ShaderPass(VignetteShader);
+    vignettePass.uniforms['offset'].value = 0.95;
+    vignettePass.uniforms['darkness'].value = 1.05;
+    instance.addPass(vignettePass);
+
     instance.addPass(new SMAAPass());
     instance.addPass(new OutputPass());
     return instance;
-  }, [gl, scene, camera, hasSelection]);
+  }, [gl, scene, camera, hasSelection, size.width, size.height]);
 
   const sample = useRef({ frames: 0, seconds: 0 });
 
@@ -218,14 +266,50 @@ const AdaptivePostProcessing: React.FC<{ hasSelection: boolean }> = ({ hasSelect
     sample.current.seconds += delta;
     if (sample.current.seconds >= 1) {
       const fps = sample.current.frames / sample.current.seconds;
-      setEnabled(fps >= 45);
+      setEnabled(fps >= 45); // Safe fallback if FPS drops below 45
       sample.current = { frames: 0, seconds: 0 };
     }
-    if (enabled) composer.render(delta);
-    else gl.render(scene, camera);
+    if (enabled) {
+      composer.render(delta);
+    } else {
+      gl.render(scene, camera);
+    }
   }, 1);
 
   return null;
+};
+
+// Dashed line indicator for exploded view connecting back to initial position
+const ExplodeDashedGuide: React.FC<{
+  currentOffset: THREE.Vector3;
+}> = ({ currentOffset }) => {
+  const lineRef = useRef<THREE.Line>(null);
+  const geometry = useMemo(() => {
+    const geom = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(-currentOffset.x, -currentOffset.y, -currentOffset.z),
+    ]);
+    return geom;
+  }, [currentOffset.x, currentOffset.y, currentOffset.z]);
+
+  useEffect(() => {
+    if (lineRef.current) {
+      lineRef.current.computeLineDistances();
+    }
+  }, [geometry]);
+
+  return (
+    <line ref={lineRef as any} geometry={geometry}>
+      <lineDashedMaterial
+        color="#64748b"
+        dashSize={0.15}
+        gapSize={0.1}
+        transparent
+        opacity={0.45}
+        depthWrite={false}
+      />
+    </line>
+  );
 };
 
 const SceneComponentNode: React.FC<{
@@ -254,10 +338,13 @@ const SceneComponentNode: React.FC<{
   onSelect,
 }) => {
   const rootRef = useRef<THREE.Group>(null);
-  const pivotRefs = useRef(new Map<string, THREE.Group>());
+  const pivotRefs = useRef<Map<string, THREE.Group>>(new Map());
   const blinkTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const [emissiveBlink, setEmissiveBlink] = useState(false);
   const center = useMemo(() => getComponentCenter(component), [component]);
+
+  // Motion blur disc fade-in state for spinning propellers
+  const [spinSpeedFactor, setSpinSpeedFactor] = useState(0);
 
   const groups = useMemo(() => {
     const map = new Map<string, ScenePart[]>();
@@ -348,6 +435,13 @@ const SceneComponentNode: React.FC<{
       delta
     );
 
+    // Ramp motion blur factor in operate mode
+    if (mode === 'operate' && mechanism && !disabled) {
+      setSpinSpeedFactor((prev) => Math.min(1, prev + delta * 2.0));
+    } else {
+      setSpinSpeedFactor((prev) => Math.max(0, prev - delta * 3.0));
+    }
+
     if (!mechanism || mode !== 'operate' || disabled) {
       groups.forEach(({ key, pivot }) => {
         const group = pivotRefs.current.get(key);
@@ -359,13 +453,16 @@ const SceneComponentNode: React.FC<{
       return;
     }
 
-    const axis = new THREE.Vector3(...(mechanism.axis || [0, 1, 0])).normalize();
+    // Correctly parse axis vector from string or array
+    const axis = parseAxisVector(mechanism.axis);
     const speed = (mechanism.speed || 1) * (reversed ? -1 : 1) * (mechanism.direction || 1);
+
     groups.forEach(({ key, parts, pivot }) => {
       const group = pivotRefs.current.get(key);
       if (!group) return;
       if (mechanism.type === 'spin') {
         const partDirection = key === '__component__' ? 1 : parts[0]?.motionDirection || 1;
+        // Counter-rotation per mechanism direction and pivot around component bounding box center
         group.rotateOnAxis(axis, delta * speed * partDirection * 2.5);
       } else if (mechanism.type === 'oscillate') {
         const offset = Math.sin(state.clock.elapsedTime * speed) * 0.08;
@@ -375,6 +472,9 @@ const SceneComponentNode: React.FC<{
   });
 
   if (activeExperiment?.action === 'remove' && activeExperiment.targets.includes(component.id)) return null;
+
+  const isPropeller = component.id.startsWith('prop_');
+  const explodeVector = new THREE.Vector3(...(component.explode || [0, 0, 0])).multiplyScalar(explodedProgress);
 
   return (
     <group
@@ -393,6 +493,11 @@ const SceneComponentNode: React.FC<{
         onHover(null);
       }}
     >
+      {/* Dashed guide line back to unexploded origin */}
+      {explodedProgress > 0.05 && explodeVector.lengthSq() > 0.01 && (
+        <ExplodeDashedGuide currentOffset={explodeVector} />
+      )}
+
       {groups.map(({ key, parts, pivot }) => (
         <group
           key={key}
@@ -418,6 +523,20 @@ const SceneComponentNode: React.FC<{
               }}
             />
           ))}
+
+          {/* Translucent motion blur disc for spinning propellers (opacity 0.12 fading in with speed) */}
+          {isPropeller && spinSpeedFactor > 0.02 && (
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+              <circleGeometry args={[2.08, 48]} />
+              <meshBasicMaterial
+                color="#60a5fa"
+                transparent
+                opacity={0.12 * spinSpeedFactor}
+                depthWrite={false}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          )}
         </group>
       ))}
     </group>
@@ -473,6 +592,22 @@ const VisionRaycastTracker: React.FC<{
   return null;
 };
 
+// Gentle hover bob in operate mode (~0.05 units)
+const HoverBobGroup: React.FC<{
+  isOperate: boolean;
+  children: React.ReactNode;
+}> = ({ isOperate, children }) => {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+    const targetY = isOperate ? Math.sin(state.clock.elapsedTime * 2.8) * 0.05 : 0;
+    groupRef.current.position.y = THREE.MathUtils.damp(groupRef.current.position.y, targetY, 4, delta);
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+};
+
 export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
   spec,
   viewMode,
@@ -502,7 +637,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
     return spec.components.filter((component) => visibleIds.has(component.id));
   }, [spec, mode, activeAssemblyStepIndex]);
 
-  const groundY = sceneBounds.min.y - sceneCenter.y - 0.05;
+  const groundY = sceneBounds.min.y - sceneCenter.y - 0.08;
   const modelScale = sceneBounds.getSize(new THREE.Vector3()).length();
 
   return (
@@ -518,24 +653,55 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
           antialias: true,
           alpha: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0, // Calibrated 1.0 exposure per spec
+          toneMappingExposure: 1.0, // Calibrated ACESFilmic exposure 1.0
         }}
         shadows
         className="w-full h-full"
       >
-        <ambientLight intensity={0.4} />
-        <hemisphereLight args={['#e2e8f0', '#0f172a', 0.6]} />
+        {/* SoftShadows PCSS simulation for realistic CAD contact shadows */}
+        <SoftShadows size={15} samples={16} focus={0.5} />
+
+        {/* Ambient & Key Lights */}
+        <ambientLight intensity={0.35} />
         <directionalLight
-          position={[6, 9, 6]}
-          intensity={1.8}
+          position={[6, 10, 6]}
+          intensity={1.9}
           color="#f8fafc"
           castShadow
           shadow-mapSize={[1024, 1024]}
+          shadow-bias={-0.0001}
         />
         <directionalLight position={[-6, 4, 3]} intensity={0.5} color="#93c5fd" />
-        <directionalLight position={[0, -4, -4]} intensity={0.3} color="#64748b" />
+        <directionalLight position={[0, -4, -4]} intensity={0.25} color="#64748b" />
 
-        <Environment preset="city" environmentIntensity={0.4} />
+        {/* Studio Lighting Environment with Lightformers */}
+        <Environment resolution={512}>
+          {/* Large soft top light */}
+          <Lightformer
+            form="rect"
+            intensity={1.6}
+            position={[0, 8, 0]}
+            scale={[12, 12, 1]}
+            rotation-x={Math.PI / 2}
+          />
+          {/* Two thin strip lights for crisp edge reflections */}
+          <Lightformer
+            form="rect"
+            intensity={2.2}
+            position={[-6, 2, -3]}
+            scale={[1, 12, 1]}
+            rotation-y={Math.PI / 3}
+            color="#93c5fd"
+          />
+          <Lightformer
+            form="rect"
+            intensity={2.0}
+            position={[6, 2, 3]}
+            scale={[1, 12, 1]}
+            rotation-y={-Math.PI / 3}
+            color="#f8fafc"
+          />
+        </Environment>
 
         <SmoothCameraController
           spec={spec}
@@ -553,42 +719,61 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
           resolution={512}
         />
 
-        {/* Subtle floor ring */}
+        {/* Subtle reflective floor with faint ring */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]}>
+          <planeGeometry args={[30, 30]} />
+          <MeshReflectorMaterial
+            blur={[300, 100]}
+            resolution={512}
+            mirror={0.12}
+            mixBlur={0.8}
+            mixStrength={1.2}
+            roughness={0.7}
+            depthScale={1.2}
+            minDepthThreshold={0.4}
+            maxDepthThreshold={1.4}
+            color="#090d16"
+            metalness={0.15}
+          />
+        </mesh>
+
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY + 0.005, 0]}>
           <ringGeometry args={[Math.max(2.0, modelScale * 0.35), Math.max(2.015, modelScale * 0.355), 96]} />
           <meshBasicMaterial color="#38bdf8" transparent opacity={0.2} />
         </mesh>
 
-        {/* Centered Assembly Group */}
-        <group position={[-sceneCenter.x, -sceneCenter.y, -sceneCenter.z]}>
-          <group name="spec-assembly">
-            {visibleComponents.map((component) => (
-              <SceneComponentNode
-                key={component.id}
-                component={component}
-                spec={spec}
-                mode={mode}
-                viewMode={viewMode}
+        {/* Centered Assembly Group with Gentle Hover Bob in Operate mode */}
+        <HoverBobGroup isOperate={mode === 'operate'}>
+          <group position={[-sceneCenter.x, -sceneCenter.y, -sceneCenter.z]}>
+            <group name="spec-assembly">
+              {visibleComponents.map((component) => (
+                <SceneComponentNode
+                  key={component.id}
+                  component={component}
+                  spec={spec}
+                  mode={mode}
+                  viewMode={viewMode}
+                  explodedProgress={explodedProgress}
+                  isSelected={selectedComponentId === component.id}
+                  isHovered={hoveredComponentId === component.id}
+                  hasSelectedOther={Boolean(selectedComponentId && selectedComponentId !== component.id)}
+                  activeExperiment={activeExperiment}
+                  onHover={setHoveredComponentId}
+                  onSelect={onSelectComponent}
+                />
+              ))}
+            </group>
+            {(mode === 'trace' || mode === 'explore') && (
+              <SceneConnectionPipes
+                connections={spec.connections || []}
+                components={spec.components}
+                activeFilter={connectionFilter}
+                selectedComponentId={selectedComponentId}
                 explodedProgress={explodedProgress}
-                isSelected={selectedComponentId === component.id}
-                isHovered={hoveredComponentId === component.id}
-                hasSelectedOther={Boolean(selectedComponentId && selectedComponentId !== component.id)}
-                activeExperiment={activeExperiment}
-                onHover={setHoveredComponentId}
-                onSelect={onSelectComponent}
               />
-            ))}
+            )}
           </group>
-          {(mode === 'trace' || mode === 'explore') && (
-            <SceneConnectionPipes
-              connections={spec.connections || []}
-              components={spec.components}
-              activeFilter={connectionFilter}
-              selectedComponentId={selectedComponentId}
-              explodedProgress={explodedProgress}
-            />
-          )}
-        </group>
+        </HoverBobGroup>
 
         <OrbitControls
           makeDefault
@@ -615,7 +800,7 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
         <AdaptivePostProcessing hasSelection={Boolean(selectedComponentId)} />
       </Canvas>
 
-      {/* Top-left tidy corner: scale note and procedural tag */}
+      {/* Top-left scale note badge */}
       <div className="absolute top-3 left-3 pointer-events-none flex flex-col gap-1.5 z-10 max-w-[min(28rem,55vw)]">
         <span
           className="text-xs px-2.5 py-1.5 rounded-lg border backdrop-blur-md font-medium"
@@ -626,16 +811,6 @@ export const GenericSceneCanvas: React.FC<GenericSceneCanvasProps> = ({
           }}
         >
           {spec.scaleNote || 'Approximate conceptual scale'}
-        </span>
-        <span
-          className="text-xs px-2.5 py-1 rounded-lg border backdrop-blur-md"
-          style={{
-            backgroundColor: 'var(--sl-bg-surface)',
-            borderColor: 'var(--sl-border-subtle)',
-            color: 'var(--sl-text-secondary)',
-          }}
-        >
-          Simplified procedural geometry
         </span>
       </div>
 
